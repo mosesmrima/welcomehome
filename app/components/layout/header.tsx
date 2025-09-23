@@ -1,0 +1,88 @@
+"use client"
+
+import { Search, Bell, Wallet } from "lucide-react"
+import { Input } from "../ui/input"
+import { Button } from "../ui/button"
+import { Badge } from "../ui/badge"
+import { useAccount } from "wagmi"
+import { WalletConnect } from "../web3/wallet-connect"
+import { useState } from "react"
+
+export function Header() {
+  const { address, isConnected } = useAccount()
+  const [showWalletModal, setShowWalletModal] = useState(false)
+
+  const formatAddress = (addr: string) => {
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`
+  }
+
+  return (
+    <>
+      <header className="flex h-16 items-center justify-between border-b bg-white px-6">
+        {/* Page Title */}
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-semibold">Welcome Home Property</h1>
+        </div>
+
+        {/* Search and Actions */}
+        <div className="flex items-center gap-4">
+          {/* Search Bar */}
+          <div className="relative w-96 hidden md:block">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-600" />
+            <Input
+              type="search"
+              placeholder="Search properties..."
+              className="pl-10 pr-4"
+            />
+          </div>
+
+          {/* Wallet Connection */}
+          {isConnected && address ? (
+            <Button
+              variant="outline"
+              onClick={() => setShowWalletModal(true)}
+              className="flex items-center gap-2"
+            >
+              <div className="h-2 w-2 rounded-full bg-green-500"></div>
+              <Wallet className="h-4 w-4" />
+              <span className="hidden sm:inline">{formatAddress(address)}</span>
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setShowWalletModal(true)}
+              className="flex items-center gap-2"
+            >
+              <Wallet className="h-4 w-4" />
+              <span className="hidden sm:inline">Connect Wallet</span>
+            </Button>
+          )}
+
+          {/* Notification Bell */}
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">
+              3
+            </span>
+          </Button>
+        </div>
+      </header>
+
+      {/* Wallet Modal */}
+      {showWalletModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="relative max-w-md w-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowWalletModal(false)}
+              className="absolute -top-10 right-0 text-white hover:bg-white/10"
+            >
+              ×
+            </Button>
+            <WalletConnect />
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
