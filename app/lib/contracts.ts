@@ -1,31 +1,31 @@
 import { SmartContractConfig } from '../types/web3'
 
-// Smart contract configuration for Alkebuleum network
-export const ALKEBULEUM_CONFIG: SmartContractConfig = {
+// Smart contract configuration for Hedera Mainnet
+export const HEDERA_MAINNET_CONFIG: SmartContractConfig = {
   propertyFactory: '0x0000000000000000000000000000000000000000', // To be deployed
   marketplace: '0x0000000000000000000000000000000000000000', // To be deployed
   ownershipRegistry: '0x0000000000000000000000000000000000000000', // To be deployed
   kycRegistry: '0x0000000000000000000000000000000000000000', // To be deployed
-  chainId: 1337, // Replace with actual Alkebuleum chain ID
-  rpcUrl: 'https://rpc.alkebuleum.network', // Replace with actual RPC URL
-  blockExplorer: 'https://explorer.alkebuleum.network', // Replace with actual explorer URL
+  chainId: 295, // Hedera Mainnet chain ID
+  rpcUrl: 'https://mainnet.hashio.io/api',
+  blockExplorer: 'https://hashscan.io/mainnet',
 }
 
-// Testnet configuration (Ethereum Sepolia for development)
-export const SEPOLIA_CONFIG: SmartContractConfig = {
+// Testnet configuration (Hedera Testnet for development)
+export const HEDERA_TESTNET_CONFIG: SmartContractConfig = {
   propertyFactory: '0x0000000000000000000000000000000000000000', // To be deployed
   marketplace: '0x0000000000000000000000000000000000000000', // To be deployed
   ownershipRegistry: '0x0000000000000000000000000000000000000000', // To be deployed
   kycRegistry: '0x0000000000000000000000000000000000000000', // To be deployed
-  chainId: 11155111, // Sepolia testnet
-  rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY',
-  blockExplorer: 'https://sepolia.etherscan.io',
+  chainId: 296, // Hedera Testnet chain ID
+  rpcUrl: 'https://testnet.hashio.io/api',
+  blockExplorer: 'https://hashscan.io/testnet',
 }
 
 // Get current network configuration
 export function getNetworkConfig(): SmartContractConfig {
-  const isDevelopment = process.env.NODE_ENV === 'development'
-  return isDevelopment ? SEPOLIA_CONFIG : ALKEBULEUM_CONFIG
+  const isMainnet = process.env.NEXT_PUBLIC_HEDERA_NETWORK === 'mainnet'
+  return isMainnet ? HEDERA_MAINNET_CONFIG : HEDERA_TESTNET_CONFIG
 }
 
 // Smart contract ABIs (to be added when contracts are deployed)

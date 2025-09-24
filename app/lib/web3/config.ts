@@ -1,25 +1,47 @@
 import { createConfig, http } from 'wagmi'
-import { mainnet, polygon, arbitrum } from 'wagmi/chains'
+import { mainnet, polygon } from 'wagmi/chains'
 import { injected, metaMask, walletConnect } from 'wagmi/connectors'
 
-// Define Alkebuleum network (custom chain)
-export const alkebuleum = {
-  id: 31337, // Replace with actual Alkebuleum chain ID
-  name: 'Alkebuleum',
+// Define Hedera Testnet
+export const hederaTestnet = {
+  id: 296,
+  name: 'Hedera Testnet',
   nativeCurrency: {
-    decimals: 18,
-    name: 'Alkebuleum',
-    symbol: 'ALK',
+    decimals: 8,
+    name: 'HBAR',
+    symbol: 'HBAR',
   },
   rpcUrls: {
     default: {
-      http: ['http://localhost:8545'], // Replace with actual Alkebuleum RPC
+      http: [process.env.NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL || 'https://testnet.hashio.io/api'],
     },
   },
   blockExplorers: {
     default: {
-      name: 'Alkebuleum Explorer',
-      url: 'https://explorer.alkebuleum.com', // Replace with actual explorer
+      name: 'HashScan',
+      url: 'https://hashscan.io/testnet',
+    },
+  },
+} as const
+
+// Define Hedera Mainnet
+export const hederaMainnet = {
+  id: 295,
+  name: 'Hedera Mainnet',
+  nativeCurrency: {
+    decimals: 8,
+    name: 'HBAR',
+    symbol: 'HBAR',
+  },
+  rpcUrls: {
+    default: {
+      http: [process.env.NEXT_PUBLIC_HEDERA_MAINNET_RPC_URL || 'https://mainnet.hashio.io/api'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'HashScan',
+      url: 'https://hashscan.io/mainnet',
     },
   },
 } as const
@@ -31,21 +53,33 @@ export const CONTRACT_ADDRESSES = {
   GOVERNANCE: process.env.NEXT_PUBLIC_GOVERNANCE_ADDRESS || '0x0000000000000000000000000000000000000000',
 } as const
 
+// Create connectors array based on available configuration
+const connectors = [
+  injected(),
+  metaMask(),
+]
+
+// Only add WalletConnect if project ID is available
+if (process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID) {
+  connectors.push(
+    walletConnect({
+      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+    })
+  )
+}
+
+// Determine which Hedera network to use based on environment
+const hederaNetwork = process.env.NEXT_PUBLIC_HEDERA_NETWORK === 'mainnet' ? hederaMainnet : hederaTestnet
+
 // Create wagmi config
 export const config = createConfig({
-  chains: [alkebuleum, mainnet, polygon, arbitrum],
-  connectors: [
-    injected(),
-    metaMask(),
-    walletConnect({
-      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '',
-    }),
-  ],
+  chains: [hederaNetwork, mainnet, polygon],
+  connectors,
   transports: {
-    [alkebuleum.id]: http(),
+    [hederaTestnet.id]: http(),
+    [hederaMainnet.id]: http(),
     [mainnet.id]: http(),
     [polygon.id]: http(),
-    [arbitrum.id]: http(),
   },
 })
 
@@ -59,10 +93,16 @@ export const CONTRACT_ROLES = {
 
 // Network configuration
 export const NETWORK_CONFIG = {
-  [alkebuleum.id]: {
-    name: 'Alkebuleum',
-    currency: 'ALK',
-    decimals: 18,
-    blockTime: 2, // seconds
+  [hederaTestnet.id]: {
+    name: 'Hedera Testnet',
+    currency: 'HBAR',
+    decimals: 8,
+    blockTime: 3, // seconds (Hedera consensus time)
+  },
+  [hederaMainnet.id]: {
+    name: 'Hedera Mainnet',
+    currency: 'HBAR',
+    decimals: 8,
+    blockTime: 3, // seconds (Hedera consensus time)
   },
 } as const

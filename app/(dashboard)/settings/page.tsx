@@ -24,7 +24,6 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="mb-6 flex items-center gap-4">
         <Avatar className="h-20 w-20">
-          <AvatarImage src="/avatar.jpg" alt="User" />
           <AvatarFallback className="bg-primary text-white text-2xl">JM</AvatarFallback>
         </Avatar>
         <div>

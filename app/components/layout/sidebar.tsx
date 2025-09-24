@@ -33,7 +33,6 @@ export function Sidebar() {
       {/* User Profile */}
       <div className="flex flex-col items-center justify-center p-6 text-white">
         <Avatar className="h-16 w-16 mb-3">
-          <AvatarImage src="/avatar.jpg" alt="User" />
           <AvatarFallback className="bg-primary text-white text-lg">JM</AvatarFallback>
         </Avatar>
         <h3 className="text-sm font-semibold">John Martins</h3>

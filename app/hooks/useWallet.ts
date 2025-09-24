@@ -26,7 +26,7 @@ export function useWallet() {
         address: '0x742d35Cc6531C0532925a3b8D6431644E123456',
         isConnected: true,
         isConnecting: false,
-        chainId: 1, // Ethereum mainnet (replace with Alkebuleum chainId)
+        chainId: 296, // Hedera testnet chainId
         balance: 1.5,
         provider: {},
       })
