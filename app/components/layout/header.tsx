@@ -1,6 +1,8 @@
 "use client"
 
-import { Search, Bell, Wallet, User } from "lucide-react"
+
+import { Search, Bell, Wallet, Home } from "lucide-react"
+
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
@@ -26,7 +28,15 @@ export function Header() {
       <header className="flex h-16 items-center justify-between border-b bg-white px-6">
         {/* Page Title */}
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-semibold">Welcome Home Property</h1>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-600">
+              <Home className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Welcome Home</h1>
+              <p className="text-xs text-gray-500 -mt-1">International Group</p>
+            </div>
+          </div>
         </div>
 
         {/* Search and Actions */}
