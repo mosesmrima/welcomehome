@@ -2,22 +2,17 @@
 
 import { Card } from "@/app/components/ui/card"
 import { PropertyCard } from "@/app/components/properties/property-card"
+import { PortfolioOverview } from "@/app/components/dashboard/portfolio-overview"
 import { formatCurrency } from "@/app/lib/utils"
-import { TrendingUp, MapPin, Coins, Building2, BarChart3 } from "lucide-react"
+import { TrendingUp, MapPin, Coins, Building2, BarChart3, Lock, DollarSign } from "lucide-react"
 import { useAccount } from "wagmi"
 import { useTokenBalance, useTokenInfo, usePropertyStatus } from "@/app/lib/web3/hooks/use-property-token"
 import { useUserRoles } from "@/app/lib/web3/hooks/use-roles"
+import { useStakingInfo, useClaimableRevenue } from "@/app/lib/web3/hooks/use-token-handler"
+import { usePropertyData, usePropertyStats } from "@/app/lib/web3/hooks/use-property-data"
 import { WalletConnect } from "@/app/components/web3/wallet-connect"
-
-// Mock data - will be replaced with real data from smart contracts
-const mockProperties = [
-  { id: 1, name: "Plot 15", location: "Westlands, Nairobi", size: "2000 sq ft", price: 54000, image: "/property1.jpg" },
-  { id: 2, name: "Plot 16", location: "Kilimani, Nairobi", size: "1800 sq ft", price: 48000, image: "/property2.jpg" },
-  { id: 3, name: "Plot 17", location: "Karen, Nairobi", size: "3000 sq ft", price: 72000, image: "/property3.jpg" },
-  { id: 4, name: "Plot 18", location: "Runda, Nairobi", size: "2500 sq ft", price: 65000, image: "/property4.jpg" },
-  { id: 5, name: "Plot 19", location: "Lavington, Nairobi", size: "2200 sq ft", price: 58000, image: "/property5.jpg" },
-  { id: 6, name: "Plot 20", location: "Kileleshwa, Nairobi", size: "1900 sq ft", price: 51000, image: "/property6.jpg" },
-]
+import { ContractDebug } from "@/app/components/debug/ContractDebug"
+import { formatUnits } from "viem"
 
 const topLocations = [
   { amount: 50000, location: "Westlands at David" },
@@ -33,6 +28,10 @@ export default function DashboardPage() {
   const tokenInfo = useTokenInfo()
   const propertyStatus = usePropertyStatus()
   const userRoles = useUserRoles(address)
+  const { stakingInfo } = useStakingInfo(address)
+  const { claimableAmount } = useClaimableRevenue(address)
+  const { properties, isLoading: propertiesLoading } = usePropertyData()
+  const { stats } = usePropertyStats()
 
   // Show wallet connection if not connected
   if (!isConnected) {
@@ -69,7 +68,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card className="bg-gradient-to-br from-blue-600 to-blue-700 p-6 text-white border-0 shadow-lg">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-blue-500/20 p-2 rounded-lg">
@@ -117,16 +116,49 @@ export default function DashboardPage() {
               {propertyStatus.isPaused ? 'Paused' : 'Operating'}
             </p>
           </Card>
+
+          <Card className="bg-gradient-to-br from-orange-600 to-orange-700 p-6 text-white border-0 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-orange-500/20 p-2 rounded-lg">
+                <Lock className="h-6 w-6" />
+              </div>
+              <BarChart3 className="h-4 w-4 opacity-60" />
+            </div>
+            <p className="text-orange-100 text-sm font-medium mb-1">Staked Tokens</p>
+            <h2 className="mb-2 text-3xl font-bold">
+              {stakingInfo?.stakedAmount ? Number(stakingInfo.stakedAmount).toLocaleString() : '0'}
+            </h2>
+            <p className="text-orange-100 text-sm">
+              Earning 5.00% APY
+            </p>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-6 text-white border-0 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-emerald-500/20 p-2 rounded-lg">
+                <DollarSign className="h-6 w-6" />
+              </div>
+              <TrendingUp className="h-4 w-4 opacity-60" />
+            </div>
+            <p className="text-emerald-100 text-sm font-medium mb-1">Claimable Revenue</p>
+            <h2 className="mb-2 text-3xl font-bold">
+              {claimableAmount ? Number(claimableAmount).toLocaleString() : '0'}
+            </h2>
+            <p className="text-emerald-100 text-sm">
+              HBAR Available
+            </p>
+          </Card>
         </div>
 
-        {/* Properties Grid */}
-        <div>
-          <h3 className="mb-4 text-xl font-semibold">Your Properties</h3>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {mockProperties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
-            ))}
-          </div>
+        {/* Portfolio Overview */}
+        <div className="mb-8">
+          <h3 className="mb-4 text-xl font-semibold">Portfolio Overview</h3>
+          <PortfolioOverview />
+        </div>
+
+        {/* Debug Section - Remove in production */}
+        <div className="mt-8">
+          <ContractDebug />
         </div>
       </div>
 

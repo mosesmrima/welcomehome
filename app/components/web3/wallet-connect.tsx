@@ -1,24 +1,33 @@
 "use client"
 
 import { useState } from 'react'
-import { useAccount, useConnect, useDisconnect, useEnsName } from 'wagmi'
+import { useAccount, useConnect, useDisconnect, useEnsName, useSwitchChain } from 'wagmi'
 import { Button } from '@/app/components/ui/button'
 import { Card } from '@/app/components/ui/card'
 import { Badge } from '@/app/components/ui/badge'
-import { Wallet, Copy, ExternalLink, ChevronDown, Check } from 'lucide-react'
+import { Wallet, Copy, ExternalLink, ChevronDown, Check, AlertTriangle } from 'lucide-react'
 import { useUserRoles } from '@/app/lib/web3/hooks/use-roles'
 import { useTokenBalance } from '@/app/lib/web3/hooks/use-property-token'
+import { addNetworkToWallet, getNetworkName, isHederaNetwork } from '@/app/lib/web3/utils'
+import { hederaTestnet } from '@/app/lib/web3/config'
 
 export function WalletConnect() {
   const { address, isConnected, chain } = useAccount()
   const { data: ensName } = useEnsName({ address })
   const { connect, connectors, isPending } = useConnect()
   const { disconnect } = useDisconnect()
+  const { switchChain } = useSwitchChain()
   const [showConnectors, setShowConnectors] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [isAddingNetwork, setIsAddingNetwork] = useState(false)
+  const [networkError, setNetworkError] = useState<string | null>(null)
 
   const { balance } = useTokenBalance(address)
   const roles = useUserRoles(address)
+
+  // Check if user is on the correct network
+  const isCorrectNetwork = chain && isHederaNetwork(chain.id)
+  const networkName = chain ? getNetworkName(chain.id) : 'Unknown Network'
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -30,6 +39,31 @@ export function WalletConnect() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
+  }
+
+  const handleAddNetwork = async () => {
+    setIsAddingNetwork(true)
+    setNetworkError(null)
+
+    try {
+      await addNetworkToWallet('testnet') // Default to testnet
+      // The network switch will be handled automatically by the wallet
+      console.log('✅ Network addition completed successfully')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      console.error('❌ Failed to add network:', errorMessage)
+      setNetworkError(errorMessage)
+    } finally {
+      setIsAddingNetwork(false)
+    }
+  }
+
+  const retryAddNetwork = async () => {
+    await handleAddNetwork()
+  }
+
+  const clearNetworkError = () => {
+    setNetworkError(null)
   }
 
   if (isConnected && address) {
@@ -44,9 +78,14 @@ export function WalletConnect() {
               <p className="font-semibold text-gray-900">
                 {ensName || formatAddress(address)}
               </p>
-              <p className="text-sm text-gray-500">
-                Connected to {chain?.name || 'Unknown Network'}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-500">
+                  Connected to {networkName}
+                </p>
+                {!isCorrectNetwork && (
+                  <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -73,15 +112,80 @@ export function WalletConnect() {
           </div>
         </div>
 
-        {/* Token Balance */}
-        <div className="mb-3 p-3 bg-gray-50 rounded-lg">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-700">Token Balance:</span>
-            <span className="font-semibold text-gray-900">
-              {balance ? Number(balance).toLocaleString() : '0'} tokens
-            </span>
+        {/* Network Warning */}
+        {!isCorrectNetwork && (
+          <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <span className="text-sm font-medium text-yellow-800">Wrong Network</span>
+            </div>
+            <p className="text-sm text-yellow-700 mb-3">
+              You're connected to {networkName}. Please switch to Hedera Testnet to use this application.
+            </p>
+
+            {/* Network Error Display */}
+            {networkError && (
+              <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-700 mb-2">{networkError}</p>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={retryAddNetwork}
+                    disabled={isAddingNetwork}
+                    size="sm"
+                    variant="outline"
+                    className="text-red-700 border-red-300 hover:bg-red-100"
+                  >
+                    {isAddingNetwork ? 'Retrying...' : 'Retry'}
+                  </Button>
+                  <Button
+                    onClick={clearNetworkError}
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-700"
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <Button
+              onClick={handleAddNetwork}
+              disabled={isAddingNetwork}
+              size="sm"
+              className="w-full bg-yellow-600 hover:bg-yellow-700"
+            >
+              {isAddingNetwork ? 'Adding Network...' : 'Add Hedera Testnet to MetaMask'}
+            </Button>
+
+            {/* Manual Instructions */}
+            <details className="mt-3">
+              <summary className="text-sm text-yellow-700 cursor-pointer hover:text-yellow-800">
+                Add network manually (click to expand)
+              </summary>
+              <div className="mt-2 p-2 bg-yellow-100 rounded text-xs text-yellow-800">
+                <p className="font-medium mb-1">Manual MetaMask Setup:</p>
+                <p><strong>Network Name:</strong> Hedera Testnet</p>
+                <p><strong>RPC URL:</strong> https://testnet.hashio.io/api</p>
+                <p><strong>Chain ID:</strong> 296</p>
+                <p><strong>Symbol:</strong> HBAR</p>
+                <p><strong>Explorer:</strong> https://hashscan.io/testnet</p>
+              </div>
+            </details>
           </div>
-        </div>
+        )}
+
+        {/* Token Balance */}
+        {isCorrectNetwork && (
+          <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-gray-700">Token Balance:</span>
+              <span className="font-semibold text-gray-900">
+                {balance ? Number(balance).toLocaleString() : '0'} tokens
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* User Roles */}
         {roles.isManager && (

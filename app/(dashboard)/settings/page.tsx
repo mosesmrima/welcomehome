@@ -1,13 +1,17 @@
 "use client"
 
 import { useState } from "react"
+import * as React from "react"
 import { Card } from "@/app/components/ui/card"
 import { Input } from "@/app/components/ui/input"
 import { Button } from "@/app/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Badge } from "@/app/components/ui/badge"
+import { Label } from "@/app/components/ui/label"
 import { cn } from "@/app/lib/utils"
-import { Upload, Mail, Bell, Shield, User } from "lucide-react"
+import { Upload, Mail, Bell, Shield, User, Save, Loader2, CheckCircle, Clock, XCircle, AlertTriangle } from "lucide-react"
+import { useUserProfile } from "@/app/lib/supabase/hooks/use-user-profile"
+import { useAccount } from "wagmi"
 
 const tabs = [
   { id: "profile", label: "Profile settings", icon: User },
@@ -18,18 +22,60 @@ const tabs = [
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile")
+  const { address, isConnected } = useAccount()
+  const { profile, isAccredited } = useUserProfile()
+
+  const formatAddress = (addr: string) => {
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`
+  }
+
+  const getKYCStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'bg-green-100 text-green-800'
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'rejected':
+        return 'bg-red-100 text-red-800'
+      case 'expired':
+        return 'bg-orange-100 text-orange-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="p-6">
+        <div className="max-w-md mx-auto text-center">
+          <User className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Settings</h1>
+          <p className="text-gray-600">Connect your wallet to access settings</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6">
       {/* Header */}
       <div className="mb-6 flex items-center gap-4">
         <Avatar className="h-20 w-20">
-          <AvatarFallback className="bg-primary text-white text-2xl">JM</AvatarFallback>
+          <AvatarFallback className="bg-primary text-white text-2xl">
+            {profile?.name ? profile.name.slice(0, 2).toUpperCase() : address?.slice(2, 4).toUpperCase() || 'U'}
+          </AvatarFallback>
         </Avatar>
         <div>
-          <h2 className="text-2xl font-bold">John Martins</h2>
-          <p className="text-gray-800">johnmartins@gmail.com</p>
-          <Badge className="mt-1">Connected: United Kingdom</Badge>
+          <h2 className="text-2xl font-bold">{profile?.name || 'Anonymous User'}</h2>
+          <p className="text-gray-800 font-mono text-sm">{address ? formatAddress(address) : 'Not connected'}</p>
+          <div className="flex gap-2 mt-2">
+            <Badge className={getKYCStatusColor(profile?.kyc_status || 'pending')}>
+              {profile?.kyc_status?.charAt(0).toUpperCase() + profile?.kyc_status?.slice(1) || 'Pending'}
+            </Badge>
+            {isAccredited && (
+              <Badge className="bg-blue-100 text-blue-800">Accredited</Badge>
+            )}
+          </div>
         </div>
       </div>
 
@@ -72,31 +118,88 @@ export default function SettingsPage() {
 }
 
 function ProfileSettings() {
+  const { profile, updateProfile } = useUserProfile()
+  const { address } = useAccount()
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [formData, setFormData] = useState({
+    name: profile?.name || '',
+    email: profile?.email || '',
+  })
+
+  // Update form when profile changes
+  React.useEffect(() => {
+    if (profile) {
+      setFormData({
+        name: profile.name || '',
+        email: profile.email || '',
+      })
+    }
+  }, [profile])
+
+  const handleSave = async () => {
+    if (!formData.name.trim()) return
+
+    setIsSaving(true)
+    try {
+      await updateProfile({
+        name: formData.name.trim(),
+        email: formData.email.trim() || null,
+      })
+      setIsEditing(false)
+    } catch (err) {
+      console.error('Failed to save profile:', err)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCancel = () => {
+    setFormData({
+      name: profile?.name || '',
+      email: profile?.email || '',
+    })
+    setIsEditing(false)
+  }
+
+  const formatAddress = (addr: string) => {
+    return `${addr.slice(0, 10)}...${addr.slice(-6)}`
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-4">Personal Info</h3>
-        <p className="text-sm text-gray-800 mb-6">Update your photo and personal details.</p>
+        <p className="text-sm text-gray-800 mb-6">Update your personal details and contact information.</p>
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium mb-2">First name</label>
-            <Input defaultValue="John" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Last name</label>
-            <Input defaultValue="Martins" />
+        {/* Wallet Address (Read-only) */}
+        <div className="mb-6">
+          <Label className="text-sm font-medium mb-2 block">Wallet Address</Label>
+          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="font-mono text-sm">{address ? formatAddress(address) : 'Not connected'}</span>
           </div>
         </div>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Email address</label>
-          <Input defaultValue="johnmartins@gmail.com" />
+          <Label className="text-sm font-medium mb-2 block">Display Name</Label>
+          <Input
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="Enter your display name"
+            disabled={!isEditing}
+          />
         </div>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Phone number</label>
-          <Input defaultValue="+1 (555) 4598" />
+          <Label className="text-sm font-medium mb-2 block">Email Address (Optional)</Label>
+          <Input
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            placeholder="Enter your email address"
+            disabled={!isEditing}
+          />
         </div>
 
         <div className="mb-6">
@@ -136,8 +239,25 @@ function ProfileSettings() {
       </div>
 
       <div className="flex justify-end gap-3">
-        <Button variant="outline">Cancel</Button>
-        <Button>Save changes</Button>
+        {isEditing ? (
+          <>
+            <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving || !formData.name.trim()}>
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Save Changes
+            </Button>
+          </>
+        ) : (
+          <Button onClick={() => setIsEditing(true)}>
+            Edit Profile
+          </Button>
+        )}
       </div>
     </div>
   )

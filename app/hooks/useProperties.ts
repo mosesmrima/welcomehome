@@ -2,134 +2,115 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Property, Transaction } from '../types/web3'
-
-// Mock data - will be replaced with smart contract calls
-const mockProperties: Property[] = [
-  {
-    id: '1',
-    name: 'Plot 15',
-    location: 'Westlands, Nairobi',
-    description: 'Prime commercial property in Westlands business district',
-    totalSupply: 10000,
-    pricePerToken: 5.4,
-    currentPrice: 5.8,
-    imageUrl: '/property1.jpg',
-    metadataUri: 'ipfs://QmExample1...',
-    contractAddress: '0x123...',
-    tokenStandard: 'ERC-20',
-    isActive: true,
-    createdAt: new Date('2024-01-15'),
-  },
-  {
-    id: '2',
-    name: 'Plot 16',
-    location: 'Kilimani, Nairobi',
-    description: 'Residential property in upscale Kilimani area',
-    totalSupply: 8000,
-    pricePerToken: 4.8,
-    currentPrice: 5.1,
-    imageUrl: '/property2.jpg',
-    metadataUri: 'ipfs://QmExample2...',
-    contractAddress: '0x456...',
-    tokenStandard: 'ERC-20',
-    isActive: true,
-    createdAt: new Date('2024-02-01'),
-  },
-]
+import { usePropertyData } from '../lib/web3/hooks/use-property-data'
+import { formatUnits } from 'viem'
+import { usePurchaseTokens, useSellTokens } from '../lib/web3/hooks/use-token-handler'
 
 export function useProperties() {
+  const { properties: contractProperties, isLoading, error: contractError } = usePropertyData()
   const [properties, setProperties] = useState<Property[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+
+  // Convert contract data to Property interface
+  useEffect(() => {
+    const convertedProperties: Property[] = contractProperties.map(contractProp => ({
+      id: contractProp.id,
+      name: contractProp.name,
+      location: contractProp.location,
+      description: contractProp.description,
+      totalSupply: Number(formatUnits(contractProp.totalSupply, 18)),
+      pricePerToken: Number(formatUnits(contractProp.currentPrice, 18)),
+      currentPrice: Number(formatUnits(contractProp.currentPrice, 18)),
+      imageUrl: contractProp.imageUrl,
+      metadataUri: contractProp.metadataUri,
+      contractAddress: contractProp.contractAddress,
+      tokenStandard: 'ERC-20' as const,
+      isActive: contractProp.isActive,
+      createdAt: new Date(), // Would come from contract events in full implementation
+    }))
+    setProperties(convertedProperties)
+  }, [contractProperties])
 
   const fetchProperties = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      // Mock API call - replace with smart contract interaction
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setProperties(mockProperties)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch properties')
-    } finally {
-      setLoading(false)
-    }
+    // This is now handled by the usePropertyData hook
+    // Just a placeholder for backward compatibility
   }, [])
 
   const getProperty = useCallback(async (propertyId: string): Promise<Property | null> => {
-    // Mock implementation - replace with smart contract call
-    return mockProperties.find(p => p.id === propertyId) || null
-  }, [])
+    return properties.find(p => p.id === propertyId) || null
+  }, [properties])
+
+  const { purchaseTokens: contractPurchase, isPending: purchasePending } = usePurchaseTokens()
 
   const purchaseTokens = useCallback(async (
     propertyId: string,
     tokenAmount: number,
-    paymentToken: string = 'USDC'
+    paymentToken: string = 'HBAR'
   ): Promise<Transaction> => {
-    // Mock implementation - replace with smart contract interaction
     const property = await getProperty(propertyId)
     if (!property) {
       throw new Error('Property not found')
     }
 
-    const totalCost = tokenAmount * property.pricePerToken
+    try {
+      // Use the actual smart contract function
+      const hash = await contractPurchase(BigInt(Math.floor(tokenAmount * 1e18)))
 
-    // Mock transaction
-    const transaction: Transaction = {
-      id: Date.now().toString(),
-      hash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
-      propertyId,
-      propertyName: property.name,
-      type: 'buy',
-      amount: totalCost,
-      tokenAmount,
-      pricePerToken: property.pricePerToken,
-      from: '0x0000000000000000000000000000000000000000',
-      to: '0x742d35Cc6531C0532925a3b8D6431644E123456',
-      status: 'pending',
-      timestamp: new Date(),
+      const transaction: Transaction = {
+        id: Date.now().toString(),
+        hash: hash || '0x0000000000000000000000000000000000000000000000000000000000000000',
+        propertyId,
+        propertyName: property.name,
+        type: 'buy',
+        amount: tokenAmount * property.pricePerToken,
+        tokenAmount,
+        pricePerToken: property.pricePerToken,
+        from: '0x0000000000000000000000000000000000000000',
+        to: property.contractAddress,
+        status: 'pending',
+        timestamp: new Date(),
+      }
+
+      return transaction
+    } catch (err) {
+      throw new Error(`Purchase failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
+  }, [getProperty, contractPurchase])
 
-    // Simulate transaction processing
-    setTimeout(() => {
-      // In real implementation, listen for transaction confirmation
-      transaction.status = 'confirmed'
-      transaction.blockNumber = 18123456
-    }, 3000)
-
-    return transaction
-  }, [getProperty])
+  const { sellTokens: contractSell, isPending: sellPending } = useSellTokens()
 
   const sellTokens = useCallback(async (
     propertyId: string,
     tokenAmount: number
   ): Promise<Transaction> => {
-    // Mock implementation - replace with smart contract interaction
     const property = await getProperty(propertyId)
     if (!property) {
       throw new Error('Property not found')
     }
 
-    const totalValue = tokenAmount * property.currentPrice
+    try {
+      // Use the actual smart contract function
+      const hash = await contractSell(BigInt(Math.floor(tokenAmount * 1e18)))
 
-    const transaction: Transaction = {
-      id: Date.now().toString(),
-      hash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
-      propertyId,
-      propertyName: property.name,
-      type: 'sell',
-      amount: totalValue,
-      tokenAmount,
-      pricePerToken: property.currentPrice,
-      from: '0x742d35Cc6531C0532925a3b8D6431644E123456',
-      to: '0x0000000000000000000000000000000000000000',
-      status: 'pending',
-      timestamp: new Date(),
+      const transaction: Transaction = {
+        id: Date.now().toString(),
+        hash: hash || '0x0000000000000000000000000000000000000000000000000000000000000000',
+        propertyId,
+        propertyName: property.name,
+        type: 'sell',
+        amount: tokenAmount * property.currentPrice,
+        tokenAmount,
+        pricePerToken: property.currentPrice,
+        from: property.contractAddress,
+        to: '0x0000000000000000000000000000000000000000',
+        status: 'pending',
+        timestamp: new Date(),
+      }
+
+      return transaction
+    } catch (err) {
+      throw new Error(`Sale failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
-
-    return transaction
-  }, [getProperty])
+  }, [getProperty, contractSell])
 
   useEffect(() => {
     fetchProperties()
@@ -137,11 +118,13 @@ export function useProperties() {
 
   return {
     properties,
-    loading,
-    error,
+    loading: isLoading,
+    error: contractError,
     fetchProperties,
     getProperty,
     purchaseTokens,
     sellTokens,
+    purchasePending,
+    sellPending,
   }
 }
