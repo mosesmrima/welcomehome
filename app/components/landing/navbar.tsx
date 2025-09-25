@@ -10,10 +10,11 @@ export function Navbar() {
 
   const menuItems = [
     { name: "Home", href: "/" },
-    { name: "About", href: "#about" },
-    { name: "Services", href: "#services" },
-    { name: "Properties", href: "/dashboard" },
-    { name: "Contact", href: "#contact" },
+    { name: "About", href: "/about" },
+    { name: "Properties", href: "/properties" },
+    { name: "News", href: "/news" },
+    { name: "Calculator", href: "/calculator" },
+    { name: "Contact", href: "/contact" },
   ]
 
   return (
