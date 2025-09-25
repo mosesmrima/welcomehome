@@ -7,7 +7,7 @@ export const hederaTestnet = {
   id: 296,
   name: 'Hedera Testnet',
   nativeCurrency: {
-    decimals: 8,
+    decimals: 18, // MetaMask requires 18 decimals for EVM compatibility
     name: 'HBAR',
     symbol: 'HBAR',
   },
@@ -29,7 +29,7 @@ export const hederaMainnet = {
   id: 295,
   name: 'Hedera Mainnet',
   nativeCurrency: {
-    decimals: 8,
+    decimals: 18, // MetaMask requires 18 decimals for EVM compatibility
     name: 'HBAR',
     symbol: 'HBAR',
   },
@@ -46,11 +46,15 @@ export const hederaMainnet = {
   },
 } as const
 
-// Contract addresses
+// Contract addresses for deployed smart contracts on Hedera Testnet
 export const CONTRACT_ADDRESSES = {
-  PROPERTY_TOKEN: process.env.NEXT_PUBLIC_PROPERTY_TOKEN_ADDRESS || '0x0000000000000000000000000000000000000000',
-  PROPERTY_MANAGER: process.env.NEXT_PUBLIC_PROPERTY_MANAGER_ADDRESS || '0x0000000000000000000000000000000000000000',
-  GOVERNANCE: process.env.NEXT_PUBLIC_GOVERNANCE_ADDRESS || '0x0000000000000000000000000000000000000000',
+  PROPERTY_TOKEN: process.env.NEXT_PUBLIC_PROPERTY_TOKEN_ADDRESS || '0xA4469cCf38cc88bA64c9d570692872c5c2A13aF7',
+  PROPERTY_MANAGER: process.env.NEXT_PUBLIC_PROPERTY_MANAGER_ADDRESS || '0x71d91F4Ad42aa2f1A118dE372247630D8C3f30cb',
+  GOVERNANCE: process.env.NEXT_PUBLIC_GOVERNANCE_ADDRESS || '0x75A63900FF55F27975005FB8299e3C1b42e28dD6',
+  PROPERTY_FACTORY: process.env.NEXT_PUBLIC_PROPERTY_FACTORY_ADDRESS || '0x710d1E7F345CA3D893511743A00De2cFC1eAb6De',
+  PROPERTY_GOVERNANCE: process.env.NEXT_PUBLIC_PROPERTY_GOVERNANCE_ADDRESS || '0x75A63900FF55F27975005FB8299e3C1b42e28dD6',
+  OWNERSHIP_REGISTRY: '0xEfD59aEdf9f5B2441e161190c6C3E1FB2F8FD21b',
+  KYC_REGISTRY: '0xeec63827760aA3d4C1eEC16a9BCFC06D2F15ecad',
 } as const
 
 // Create connectors array based on available configuration
@@ -73,13 +77,11 @@ const hederaNetwork = process.env.NEXT_PUBLIC_HEDERA_NETWORK === 'mainnet' ? hed
 
 // Create wagmi config
 export const config = createConfig({
-  chains: [hederaNetwork, mainnet, polygon],
+  chains: [hederaNetwork],
   connectors,
   transports: {
-    [hederaTestnet.id]: http(),
-    [hederaMainnet.id]: http(),
-    [mainnet.id]: http(),
-    [polygon.id]: http(),
+    [hederaTestnet.id]: http(process.env.NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL),
+    [hederaMainnet.id]: http(process.env.NEXT_PUBLIC_HEDERA_MAINNET_RPC_URL),
   },
 })
 

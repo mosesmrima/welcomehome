@@ -6,77 +6,34 @@ import { Input } from "@/app/components/ui/input"
 import { Button } from "@/app/components/ui/button"
 import { Badge } from "@/app/components/ui/badge"
 import { formatCurrency } from "@/app/lib/utils"
-import { Search, Filter, MapPin, TrendingUp, TrendingDown, Activity } from "lucide-react"
-
-// Mock transaction data
-const mockTransactions = [
-  {
-    id: 1,
-    time: "11:32 AM",
-    property: "Sunset Villa Complex",
-    location: "Westlands, Nairobi",
-    type: "Purchase",
-    tokens: 2500,
-    amount: 125000,
-    status: "Completed",
-    transactionId: "TX001234",
-    propertyImage: "/property-1.jpg"
-  },
-  {
-    id: 2,
-    time: "09:15 AM",
-    property: "Ocean View Apartments",
-    location: "Kilifi, Coast",
-    type: "Purchase",
-    tokens: 1800,
-    amount: 90000,
-    status: "Completed",
-    transactionId: "TX001235",
-    propertyImage: "/property-2.jpg"
-  },
-  {
-    id: 3,
-    time: "08:45 AM",
-    property: "Garden Heights",
-    location: "Karen, Nairobi",
-    type: "Sale",
-    tokens: 500,
-    amount: 35000,
-    status: "Pending",
-    transactionId: "TX001236",
-    propertyImage: "/property-3.jpg"
-  },
-]
-
-const yesterdayTransactions = [
-  {
-    id: 4,
-    time: "03:22 PM",
-    property: "Riverside Mall",
-    location: "Riverside Drive, Nairobi",
-    type: "Purchase",
-    tokens: 3200,
-    amount: 180000,
-    status: "Completed",
-    transactionId: "TX001237",
-    propertyImage: "/property-4.jpg"
-  },
-  {
-    id: 5,
-    time: "10:15 AM",
-    property: "Tech Hub Plaza",
-    location: "Ngong Road, Nairobi",
-    type: "Purchase",
-    tokens: 1500,
-    amount: 75000,
-    status: "Completed",
-    transactionId: "TX001238",
-    propertyImage: "/property-5.jpg"
-  },
-]
+import { Search, Filter, MapPin, TrendingUp, TrendingDown, Activity, ShoppingCart, ArrowRightLeft, Lock, DollarSign, ExternalLink } from "lucide-react"
+import { useAccount } from "wagmi"
+import { useTransactionHistory, formatTransactionType } from "@/app/lib/web3/hooks/use-transaction-history"
+import { formatUnits } from "viem"
 
 export default function TransactionsPage() {
   const [searchQuery, setSearchQuery] = useState("")
+  const { address } = useAccount()
+  const { transactions, allTransactions, isLoading, error } = useTransactionHistory(address)
+
+  // Group transactions by date
+  const groupedTransactions = transactions.reduce((acc, tx) => {
+    const date = new Date(tx.timestamp).toDateString()
+    if (!acc[date]) acc[date] = []
+    acc[date].push(tx)
+    return acc
+  }, {} as Record<string, typeof transactions>)
+
+  // Calculate stats from real transactions
+  const totalTransactions = allTransactions.length
+  const userTransactions = transactions.length
+  const totalInvested = transactions
+    .filter(tx => tx.type === 'Purchase')
+    .reduce((sum, tx) => sum + Number(formatUnits(tx.amount, 18)), 0)
+
+  const getExplorerUrl = (hash: string) => {
+    return `https://hashscan.io/testnet/transaction/${hash}`
+  }
 
   return (
     <div className="flex h-full flex-col lg:flex-row">
@@ -96,8 +53,8 @@ export default function TransactionsPage() {
               </div>
               <TrendingUp className="h-4 w-4 opacity-60" />
             </div>
-            <p className="text-blue-100 text-sm font-medium mb-1">Total Transactions</p>
-            <h3 className="text-3xl font-bold">18</h3>
+            <p className="text-blue-100 text-sm font-medium mb-1">Your Transactions</p>
+            <h3 className="text-3xl font-bold">{isLoading ? '...' : userTransactions}</h3>
           </Card>
 
           <Card className="bg-gradient-to-br from-purple-600 to-purple-700 p-6 text-white border-0 shadow-lg hover:shadow-xl transition-shadow">
@@ -108,7 +65,7 @@ export default function TransactionsPage() {
               <Activity className="h-4 w-4 opacity-60" />
             </div>
             <p className="text-purple-100 text-sm font-medium mb-1">Total Invested</p>
-            <h3 className="text-3xl font-bold">{formatCurrency(15000)}</h3>
+            <h3 className="text-3xl font-bold">{isLoading ? '...' : formatCurrency(totalInvested)}</h3>
           </Card>
 
           <Card className="bg-gradient-to-br from-green-600 to-green-700 p-6 text-white border-0 shadow-lg hover:shadow-xl transition-shadow">
@@ -118,8 +75,8 @@ export default function TransactionsPage() {
               </div>
               <Activity className="h-4 w-4 opacity-60" />
             </div>
-            <p className="text-green-100 text-sm font-medium mb-1">Portfolio Value</p>
-            <h3 className="text-3xl font-bold">+{formatCurrency(1500)}</h3>
+            <p className="text-green-100 text-sm font-medium mb-1">Network Activity</p>
+            <h3 className="text-3xl font-bold">{isLoading ? '...' : totalTransactions}</h3>
           </Card>
         </div>
 
@@ -148,43 +105,63 @@ export default function TransactionsPage() {
 
         {/* Transactions List */}
         <Card className="overflow-hidden border-0 shadow-sm">
-          <div className="divide-y divide-gray-100">
-            {/* Today's Transactions */}
+          {isLoading ? (
             <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Today</h3>
-                  <p className="text-sm text-gray-500">September 23, 2024</p>
-                </div>
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                  {mockTransactions.length} transactions
-                </Badge>
-              </div>
-              <div className="space-y-4">
-                {mockTransactions.map((tx) => (
-                  <TransactionItem key={tx.id} transaction={tx} />
-                ))}
+              <div className="text-center py-8">
+                <Activity className="h-12 w-12 mx-auto mb-4 text-gray-400 animate-spin" />
+                <p className="text-gray-600">Loading transactions...</p>
               </div>
             </div>
-
-            {/* Yesterday's Transactions */}
+          ) : error ? (
             <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Yesterday</h3>
-                  <p className="text-sm text-gray-500">September 22, 2024</p>
-                </div>
-                <Badge variant="secondary" className="bg-gray-50 text-gray-700 border-gray-200">
-                  {yesterdayTransactions.length} transactions
-                </Badge>
-              </div>
-              <div className="space-y-4">
-                {yesterdayTransactions.map((tx) => (
-                  <TransactionItem key={tx.id} transaction={tx} />
-                ))}
+              <div className="text-center py-8">
+                <Activity className="h-12 w-12 mx-auto mb-4 text-red-400" />
+                <p className="text-red-600 mb-2">Failed to load transactions</p>
+                <p className="text-gray-500 text-sm">{error}</p>
               </div>
             </div>
-          </div>
+          ) : Object.keys(groupedTransactions).length === 0 ? (
+            <div className="p-6">
+              <div className="text-center py-8">
+                <Activity className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-600 mb-2">No transactions found</p>
+                <p className="text-gray-500 text-sm">Your transaction history will appear here</p>
+              </div>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {Object.entries(groupedTransactions)
+                .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+                .map(([date, txs]) => (
+                  <div key={date} className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {new Date(date).toDateString() === new Date().toDateString()
+                            ? 'Today'
+                            : new Date(date).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                month: 'short',
+                                day: 'numeric'
+                              })
+                          }
+                        </h3>
+                        <p className="text-sm text-gray-500">{date}</p>
+                      </div>
+                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                        {txs.length} transaction{txs.length !== 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+                    <div className="space-y-4">
+                      {txs.map((tx) => (
+                        <TransactionItem key={tx.id} transaction={tx} />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          )}
         </Card>
       </div>
 
@@ -302,16 +279,46 @@ function TransactionItem({ transaction }: { transaction: any }) {
   }
 
   const getTypeIcon = (type: string) => {
-    return type === 'Purchase' ? (
-      <TrendingUp className="h-4 w-4 text-green-600" />
-    ) : (
-      <TrendingDown className="h-4 w-4 text-blue-600" />
-    )
+    switch (type) {
+      case 'Purchase':
+        return <ShoppingCart className="h-4 w-4 text-green-600" />
+      case 'Sale':
+        return <TrendingUp className="h-4 w-4 text-blue-600" />
+      case 'Stake':
+        return <Lock className="h-4 w-4 text-purple-600" />
+      case 'Revenue':
+        return <DollarSign className="h-4 w-4 text-emerald-600" />
+      case 'Transfer':
+        return <ArrowRightLeft className="h-4 w-4 text-orange-600" />
+      default:
+        return <Activity className="h-4 w-4 text-gray-600" />
+    }
+  }
+
+  const formatAddress = (addr: string) => {
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`
+  }
+
+  const getTransactionTitle = () => {
+    switch (transaction.type) {
+      case 'Purchase':
+        return 'Token Purchase'
+      case 'Sale':
+        return 'Token Sale'
+      case 'Transfer':
+        return 'Token Transfer'
+      case 'Stake':
+        return 'Token Staking'
+      case 'Revenue':
+        return 'Revenue Distribution'
+      default:
+        return formatTransactionType(transaction.type)
+    }
   }
 
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-gray-100 p-4 hover:bg-gray-50/50 hover:border-gray-200 transition-all cursor-pointer">
-      {/* Property Image Placeholder */}
+    <div className="flex items-center gap-4 rounded-xl border border-gray-100 p-4 hover:bg-gray-50/50 hover:border-gray-200 transition-all">
+      {/* Transaction Type Icon */}
       <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 shrink-0">
         <div className="flex h-6 w-6 items-center justify-center rounded bg-white/80">
           {getTypeIcon(transaction.type)}
@@ -322,11 +329,12 @@ function TransactionItem({ transaction }: { transaction: any }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between mb-1">
           <h4 className="font-semibold text-gray-900 truncate pr-2">
-            {transaction.property}
+            {getTransactionTitle()}
           </h4>
           <div className="text-right shrink-0">
             <p className="font-semibold text-lg text-gray-900">
-              {transaction.type === 'Purchase' ? '-' : '+'}{formatCurrency(transaction.amount)}
+              {transaction.type === 'Purchase' || transaction.type === 'Stake' ? '-' : ''}
+              {formatCurrency(parseFloat(formatUnits(transaction.amount, 18)))}
             </p>
           </div>
         </div>
@@ -334,18 +342,43 @@ function TransactionItem({ transaction }: { transaction: any }) {
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2 md:gap-3 text-sm text-gray-500 flex-wrap">
             <span className="flex items-center gap-1">
-              <MapPin className="h-3 w-3 shrink-0" />
-              <span className="truncate max-w-32 md:max-w-none">{transaction.location}</span>
+              <span className="truncate max-w-32 md:max-w-none">
+                {transaction.type === 'Transfer'
+                  ? `${formatAddress(transaction.from)} → ${formatAddress(transaction.to)}`
+                  : `Hash: ${formatAddress(transaction.hash)}`
+                }
+              </span>
             </span>
+            {transaction.tokenAmount && (
+              <>
+                <span className="hidden sm:inline">•</span>
+                <span className="whitespace-nowrap">
+                  {parseFloat(formatUnits(transaction.tokenAmount, 18)).toLocaleString()} tokens
+                </span>
+              </>
+            )}
             <span className="hidden sm:inline">•</span>
-            <span className="whitespace-nowrap">{transaction.tokens.toLocaleString()} tokens</span>
-            <span className="hidden sm:inline">•</span>
-            <span className="whitespace-nowrap">{transaction.time}</span>
+            <span className="whitespace-nowrap">
+              {new Date(transaction.timestamp).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              })}
+            </span>
           </div>
 
-          <Badge variant="secondary" className={`text-xs font-medium shrink-0 ${getStatusColor(transaction.status)}`}>
-            {transaction.status}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className={`text-xs font-medium shrink-0 ${getStatusColor(transaction.status)}`}>
+              {transaction.status}
+            </Badge>
+            <button
+              onClick={() => window.open(getExplorerUrl(transaction.hash), '_blank')}
+              className="text-blue-600 hover:text-blue-800 transition-colors"
+              title="View on HashScan"
+            >
+              <ExternalLink className="h-3 w-3" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
