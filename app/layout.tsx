@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Welcome Home Property",
-  description: "Blockchain-based real estate tokenization and investment platform",
+  title: "Welcome Home International Group",
+  description: "Building new pathways to wealth, travel, and cultural reconnection through blockchain-powered real estate for the African diaspora. Fractional Land. Luxury Travel. Global Legacy.",
 };
 
 export default function RootLayout({
