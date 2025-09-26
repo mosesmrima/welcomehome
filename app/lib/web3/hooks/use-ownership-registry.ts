@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useReadContract } from 'wagmi'
 import { CONTRACT_ADDRESSES } from '../config'
-import { OWNERSHIP_REGISTRY_ABI } from '../../../lib/contracts'
+import { OWNERSHIP_REGISTRY_ABI } from '../abi'
 import { Address } from 'viem'
 import { logError } from '../error-utils'
 
@@ -74,8 +74,13 @@ export function useUserProperties(address?: Address) {
     },
   })
 
+  const stablePropertyIds = useMemo(() =>
+    (propertyIds as bigint[]) || [],
+    [propertyIds]
+  )
+
   return {
-    propertyIds: (propertyIds as bigint[]) || [],
+    propertyIds: stablePropertyIds,
     refetch
   }
 }
@@ -217,14 +222,20 @@ export function useCompleteUserPortfolio(address?: Address) {
   const { portfolio, refetch: refetchPortfolio } = useUserPortfolio(address)
   const { propertyIds, refetch: refetchProperties } = useUserProperties(address)
 
+  // Update portfolio data when portfolio changes
+  useEffect(() => {
+    if (portfolio) {
+      setPortfolioData(prev => ({ ...prev, portfolio }))
+    }
+  }, [portfolio?.totalProperties, portfolio?.totalValue, portfolio?.totalTokens])
+
   useEffect(() => {
     async function fetchCompletePortfolio() {
       if (!address || !propertyIds.length) {
         setPortfolioData(prev => ({
           ...prev,
           isLoading: false,
-          properties: propertyIds,
-          portfolio
+          properties: propertyIds
         }))
         return
       }
@@ -266,7 +277,7 @@ export function useCompleteUserPortfolio(address?: Address) {
     }
 
     fetchCompletePortfolio()
-  }, [address, propertyIds, portfolio])
+  }, [address, propertyIds])
 
   const refetchAll = async () => {
     await Promise.all([

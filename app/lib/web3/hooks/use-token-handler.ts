@@ -1,16 +1,18 @@
 "use client"
 
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { CONTRACT_ADDRESSES } from '../config'
 import { PROPERTY_TOKEN_HANDLER_ABI } from '../abi'
 import { Address } from 'viem'
 
-// Token Sale Hooks
-export function useTokenSale() {
+// Token Sale Hooks - Updated for new modular architecture
+export function useTokenSale(handlerAddress?: Address) {
   const { data: saleData, refetch } = useReadContract({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+    address: handlerAddress,
     abi: PROPERTY_TOKEN_HANDLER_ABI,
     functionName: 'currentSale',
+    query: {
+      enabled: !!handlerAddress,
+    },
   })
 
   return {
@@ -26,7 +28,7 @@ export function useTokenSale() {
   }
 }
 
-export function usePurchaseTokens() {
+export function usePurchaseTokens(handlerAddress?: Address) {
   const { writeContract, data: hash, isPending, error } = useWriteContract()
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -34,8 +36,11 @@ export function usePurchaseTokens() {
   })
 
   const purchaseTokens = (tokenAmount: bigint) => {
+    if (!handlerAddress) {
+      throw new Error('Handler address is required for purchasing tokens')
+    }
     writeContract({
-      address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+      address: handlerAddress,
       abi: PROPERTY_TOKEN_HANDLER_ABI,
       functionName: 'purchaseTokens',
       args: [tokenAmount],
@@ -53,12 +58,15 @@ export function usePurchaseTokens() {
 }
 
 // Marketplace Hooks
-export function useMarketplaceListing(listingId: number) {
+export function useMarketplaceListing(handlerAddress: Address | undefined, listingId: number) {
   const { data: listingData } = useReadContract({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+    address: handlerAddress,
     abi: PROPERTY_TOKEN_HANDLER_ABI,
     functionName: 'marketplaceListings',
     args: [BigInt(listingId)],
+    query: {
+      enabled: !!handlerAddress,
+    },
   })
 
   return {
@@ -72,17 +80,20 @@ export function useMarketplaceListing(listingId: number) {
   }
 }
 
-export function useNextListingId() {
+export function useNextListingId(handlerAddress?: Address) {
   const { data: nextId } = useReadContract({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+    address: handlerAddress,
     abi: PROPERTY_TOKEN_HANDLER_ABI,
     functionName: 'nextListingId',
+    query: {
+      enabled: !!handlerAddress,
+    },
   })
 
   return nextId || 0n
 }
 
-export function useListTokens() {
+export function useListTokens(handlerAddress?: Address) {
   const { writeContract, data: hash, isPending, error } = useWriteContract()
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -90,8 +101,11 @@ export function useListTokens() {
   })
 
   const listTokens = (amount: bigint, pricePerToken: bigint) => {
+    if (!handlerAddress) {
+      throw new Error('Handler address is required for listing tokens')
+    }
     writeContract({
-      address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+      address: handlerAddress,
       abi: PROPERTY_TOKEN_HANDLER_ABI,
       functionName: 'listTokensForSale',
       args: [amount, pricePerToken],
@@ -108,7 +122,7 @@ export function useListTokens() {
   }
 }
 
-export function usePurchaseFromMarketplace() {
+export function usePurchaseFromMarketplace(handlerAddress?: Address) {
   const { writeContract, data: hash, isPending, error } = useWriteContract()
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -116,8 +130,11 @@ export function usePurchaseFromMarketplace() {
   })
 
   const purchaseFromMarketplace = (listingId: bigint, amount: bigint) => {
+    if (!handlerAddress) {
+      throw new Error('Handler address is required for purchasing from marketplace')
+    }
     writeContract({
-      address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+      address: handlerAddress,
       abi: PROPERTY_TOKEN_HANDLER_ABI,
       functionName: 'purchaseFromMarketplace',
       args: [listingId, amount],
@@ -135,14 +152,14 @@ export function usePurchaseFromMarketplace() {
 }
 
 // Staking Hooks
-export function useStakingInfo(address?: Address) {
+export function useStakingInfo(handlerAddress: Address | undefined, address?: Address) {
   const { data: stakingData, refetch } = useReadContract({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+    address: handlerAddress,
     abi: PROPERTY_TOKEN_HANDLER_ABI,
     functionName: 'stakingInfo',
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address,
+      enabled: !!(handlerAddress && address),
     },
   })
 
@@ -157,21 +174,21 @@ export function useStakingInfo(address?: Address) {
   }
 }
 
-export function useStakingRewards(address?: Address) {
+export function useStakingRewards(handlerAddress: Address | undefined, address?: Address) {
   const { data: rewards } = useReadContract({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+    address: handlerAddress,
     abi: PROPERTY_TOKEN_HANDLER_ABI,
     functionName: 'calculateStakingRewards',
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address,
+      enabled: !!(handlerAddress && address),
     },
   })
 
   return { rewards }
 }
 
-export function useStakeTokens() {
+export function useStakeTokens(handlerAddress?: Address) {
   const { writeContract, data: hash, isPending, error } = useWriteContract()
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -179,8 +196,11 @@ export function useStakeTokens() {
   })
 
   const stakeTokens = (amount: bigint) => {
+    if (!handlerAddress) {
+      throw new Error('Handler address is required for staking tokens')
+    }
     writeContract({
-      address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+      address: handlerAddress,
       abi: PROPERTY_TOKEN_HANDLER_ABI,
       functionName: 'stakeTokens',
       args: [amount],
@@ -197,7 +217,7 @@ export function useStakeTokens() {
   }
 }
 
-export function useUnstakeTokens() {
+export function useUnstakeTokens(handlerAddress?: Address) {
   const { writeContract, data: hash, isPending, error } = useWriteContract()
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -205,8 +225,11 @@ export function useUnstakeTokens() {
   })
 
   const unstakeTokens = (amount: bigint) => {
+    if (!handlerAddress) {
+      throw new Error('Handler address is required for unstaking tokens')
+    }
     writeContract({
-      address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+      address: handlerAddress,
       abi: PROPERTY_TOKEN_HANDLER_ABI,
       functionName: 'unstakeTokens',
       args: [amount],
@@ -224,11 +247,14 @@ export function useUnstakeTokens() {
 }
 
 // Revenue Distribution Hooks
-export function usePropertyRevenue() {
+export function usePropertyRevenue(handlerAddress?: Address) {
   const { data: revenueData, refetch } = useReadContract({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+    address: handlerAddress,
     abi: PROPERTY_TOKEN_HANDLER_ABI,
     functionName: 'propertyRevenue',
+    query: {
+      enabled: !!handlerAddress,
+    },
   })
 
   return {
@@ -242,21 +268,21 @@ export function usePropertyRevenue() {
   }
 }
 
-export function useClaimableRevenue(address?: Address) {
+export function useClaimableRevenue(handlerAddress: Address | undefined, address?: Address) {
   const { data: claimableAmount, refetch } = useReadContract({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+    address: handlerAddress,
     abi: PROPERTY_TOKEN_HANDLER_ABI,
     functionName: 'getClaimableRevenue',
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address,
+      enabled: !!(handlerAddress && address),
     },
   })
 
   return { claimableAmount, refetch }
 }
 
-export function useClaimRevenue() {
+export function useClaimRevenue(handlerAddress?: Address) {
   const { writeContract, data: hash, isPending, error } = useWriteContract()
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -264,8 +290,11 @@ export function useClaimRevenue() {
   })
 
   const claimRevenue = () => {
+    if (!handlerAddress) {
+      throw new Error('Handler address is required for claiming revenue')
+    }
     writeContract({
-      address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+      address: handlerAddress,
       abi: PROPERTY_TOKEN_HANDLER_ABI,
       functionName: 'claimRevenue',
     })
@@ -282,14 +311,14 @@ export function useClaimRevenue() {
 }
 
 // Access Control Hooks
-export function useAccreditedStatus(address?: Address) {
+export function useAccreditedStatus(handlerAddress: Address | undefined, address?: Address) {
   const { data: isAccredited } = useReadContract({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+    address: handlerAddress,
     abi: PROPERTY_TOKEN_HANDLER_ABI,
     functionName: 'accreditedInvestors',
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address,
+      enabled: !!(handlerAddress && address),
     },
   })
 

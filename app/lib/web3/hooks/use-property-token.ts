@@ -215,6 +215,24 @@ export function useSetMaxTokens() {
   }
 }
 
+// Hook that matches the expected interface for property browser
+export function usePropertyToken(contractAddress?: Address) {
+  const getTokenInfo = async () => {
+    // For now, return basic info since the component already has property data
+    // This can be enhanced to fetch dynamic token info from the specific contract
+    return {
+      name: 'Property Token',
+      symbol: 'PROP',
+      totalSupply: '0',
+      maxTokens: '1000000',
+    }
+  }
+
+  return {
+    getTokenInfo,
+  }
+}
+
 export function usePauseContract() {
   const { writeContract, data: hash, isPending, error } = useWriteContract()
 

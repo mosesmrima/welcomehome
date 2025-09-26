@@ -4,114 +4,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { usePublicClient, useWalletClient, useAccount } from 'wagmi'
 import { Address, parseEther, formatUnits } from 'viem'
 import { CONTRACT_ADDRESSES } from '../config'
+import { MINIMAL_PROPERTY_FACTORY_ABI } from '../abi'
 import { logError } from '../error-utils'
 
-// Property Factory ABI - Add to your abi.ts file
-const PROPERTY_FACTORY_ABI = [
-  {
-    "inputs": [],
-    "name": "propertyCount",
-    "outputs": [{"type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{"type": "uint256"}],
-    "name": "properties",
-    "outputs": [
-      {"type": "address", "name": "tokenContract"},
-      {"type": "address", "name": "handlerContract"},
-      {"type": "string", "name": "name"},
-      {"type": "string", "name": "symbol"},
-      {"type": "string", "name": "ipfsHash"},
-      {"type": "uint256", "name": "totalValue"},
-      {"type": "uint256", "name": "maxTokens"},
-      {"type": "address", "name": "creator"},
-      {"type": "uint256", "name": "createdAt"},
-      {"type": "bool", "name": "isActive"},
-      {"type": "uint8", "name": "propertyType"},
-      {"type": "string", "name": "location"}
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {"type": "uint256"},
-      {"type": "uint256"}
-    ],
-    "name": "getPropertyList",
-    "outputs": [
-      {
-        "components": [
-          {"type": "address", "name": "tokenContract"},
-          {"type": "address", "name": "handlerContract"},
-          {"type": "string", "name": "name"},
-          {"type": "string", "name": "symbol"},
-          {"type": "string", "name": "ipfsHash"},
-          {"type": "uint256", "name": "totalValue"},
-          {"type": "uint256", "name": "maxTokens"},
-          {"type": "address", "name": "creator"},
-          {"type": "uint256", "name": "createdAt"},
-          {"type": "bool", "name": "isActive"},
-          {"type": "uint8", "name": "propertyType"},
-          {"type": "string", "name": "location"}
-        ],
-        "type": "tuple[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {"type": "string", "name": "_name"},
-      {"type": "string", "name": "_symbol"},
-      {"type": "string", "name": "_ipfsHash"},
-      {"type": "uint256", "name": "_totalValue"},
-      {"type": "uint256", "name": "_maxTokens"},
-      {"type": "uint8", "name": "_propertyType"},
-      {"type": "string", "name": "_location"},
-      {"type": "address", "name": "_paymentToken"}
-    ],
-    "name": "deployProperty",
-    "outputs": [{"type": "uint256"}],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [{"type": "uint256"}],
-    "name": "verifyProperty",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getActiveProperties",
-    "outputs": [
-      {
-        "components": [
-          {"type": "address", "name": "tokenContract"},
-          {"type": "address", "name": "handlerContract"},
-          {"type": "string", "name": "name"},
-          {"type": "string", "name": "symbol"},
-          {"type": "string", "name": "ipfsHash"},
-          {"type": "uint256", "name": "totalValue"},
-          {"type": "uint256", "name": "maxTokens"},
-          {"type": "address", "name": "creator"},
-          {"type": "uint256", "name": "createdAt"},
-          {"type": "bool", "name": "isActive"},
-          {"type": "uint8", "name": "propertyType"},
-          {"type": "string", "name": "location"}
-        ],
-        "type": "tuple[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
-] as const
 
 export interface PropertyInfo {
   id: number
@@ -164,7 +59,7 @@ export function usePropertyFactory() {
       // Get total property count
       const count = await publicClient.readContract({
         address: factoryAddress,
-        abi: PROPERTY_FACTORY_ABI,
+        abi: MINIMAL_PROPERTY_FACTORY_ABI,
         functionName: 'propertyCount',
       }) as bigint
 
@@ -186,7 +81,7 @@ export function usePropertyFactory() {
         try {
           const propertiesBatch = await publicClient.readContract({
             address: factoryAddress,
-            abi: PROPERTY_FACTORY_ABI,
+            abi: MINIMAL_PROPERTY_FACTORY_ABI,
             functionName: 'getPropertyList',
             args: [BigInt(i), BigInt(end - i)],
           }) as any[]
@@ -233,7 +128,7 @@ export function usePropertyFactory() {
 
       const activeProperties = await publicClient.readContract({
         address: factoryAddress,
-        abi: PROPERTY_FACTORY_ABI,
+        abi: MINIMAL_PROPERTY_FACTORY_ABI,
         functionName: 'getActiveProperties',
       }) as any[]
 
@@ -282,7 +177,7 @@ export function usePropertyFactory() {
 
       const tx = await walletClient.writeContract({
         address: factoryAddress,
-        abi: PROPERTY_FACTORY_ABI,
+        abi: MINIMAL_PROPERTY_FACTORY_ABI,
         functionName: 'deployProperty',
         args: [
           name,
@@ -326,7 +221,7 @@ export function usePropertyFactory() {
 
       const tx = await walletClient.writeContract({
         address: factoryAddress,
-        abi: PROPERTY_FACTORY_ABI,
+        abi: MINIMAL_PROPERTY_FACTORY_ABI,
         functionName: 'verifyProperty',
         args: [BigInt(propertyId)],
       })

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { CONTRACT_ADDRESSES } from '../config'
-import { KYC_REGISTRY_ABI } from '../../../lib/contracts'
+import { KYC_REGISTRY_ABI } from '../abi'
 import { Address } from 'viem'
 import { logError } from '../error-utils'
 

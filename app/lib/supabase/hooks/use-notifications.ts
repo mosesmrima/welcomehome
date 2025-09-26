@@ -42,12 +42,8 @@ export function useNotifications() {
       // Add action methods to each notification
       const notificationsWithActions: NotificationWithActions[] = (data || []).map(notification => ({
         ...notification,
-        markAsRead: async () => {
-          await markNotificationAsRead(notification.id)
-        },
-        delete: async () => {
-          await deleteNotification(notification.id)
-        },
+        markAsRead: () => markNotificationAsRead(notification.id),
+        delete: () => deleteNotification(notification.id),
       }))
 
       setNotifications(notificationsWithActions)

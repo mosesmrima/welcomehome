@@ -1,7 +1,7 @@
 "use client"
 
 
-import { Search, Bell, Wallet, Home } from "lucide-react"
+import { Search, Bell, Wallet, Home, User } from "lucide-react"
 
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
