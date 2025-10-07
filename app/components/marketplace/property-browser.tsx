@@ -8,7 +8,18 @@ import { Badge } from '@/app/components/ui/badge'
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { MapPin, Building2, TrendingUp, Users, Calendar, DollarSign } from 'lucide-react'
 import { usePropertyFactory, PropertyInfo, PropertyType } from '@/app/lib/web3/hooks/use-property-factory'
-import { usePropertyToken } from '@/app/lib/web3/hooks/use-property-token'
+import Image from 'next/image'
+
+// Property images mapping
+const PROPERTY_IMAGES = [
+  '/images/properties/house-1.jpg',
+  '/images/properties/house-2.jpg',
+  '/images/properties/house-3.jpg',
+  '/images/properties/house-6.jpg',
+  '/images/properties/house-7.jpg',
+  '/images/properties/house-9.jpg',
+  '/images/properties/house-10.jpg',
+]
 
 const PROPERTY_TYPE_LABELS = {
   [PropertyType.RESIDENTIAL]: 'Residential',
@@ -32,49 +43,52 @@ interface PropertyCardProps {
 }
 
 function PropertyCard({ property, onViewDetails }: PropertyCardProps) {
-  const { getTokenInfo } = usePropertyToken(property.tokenContract)
-  const [tokenInfo, setTokenInfo] = useState<any>(null)
-
-  useEffect(() => {
-    async function fetchTokenInfo() {
-      try {
-        const info = await getTokenInfo()
-        setTokenInfo(info)
-      } catch (error) {
-        console.warn('Failed to fetch token info for', property.name)
-      }
-    }
-    fetchTokenInfo()
-  }, [getTokenInfo])
-
   const totalValueUSD = formatUnits(property.totalValue, 18)
   const maxTokens = formatUnits(property.maxTokens, 18)
   const pricePerToken = parseFloat(totalValueUSD) / parseFloat(maxTokens)
   const createdDate = new Date(Number(property.createdAt) * 1000)
 
+  const propertyImage = PROPERTY_IMAGES[property.id % PROPERTY_IMAGES.length]
+
   return (
-    <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => onViewDetails(property)}>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <span className="text-lg">{PROPERTY_TYPE_ICONS[property.propertyType as PropertyType]}</span>
-              {property.name}
-            </CardTitle>
-            <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-              <MapPin className="h-3 w-3" />
-              {property.location}
-            </p>
-          </div>
-          <div className="text-right">
-            <Badge variant={property.isActive ? "default" : "secondary"}>
-              {property.isActive ? 'Active' : 'Inactive'}
-            </Badge>
-            <p className="text-xs text-gray-500 mt-1">
-              {PROPERTY_TYPE_LABELS[property.propertyType as PropertyType]}
-            </p>
-          </div>
+    <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden group">
+      {/* Property Image */}
+      <div className="relative h-48 overflow-hidden" onClick={() => onViewDetails(property)}>
+        <Image
+          src={propertyImage}
+          alt={property.name}
+          fill
+          className="object-cover group-hover:scale-110 transition-transform duration-500"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+
+        {/* Badges on Image */}
+        <div className="absolute top-3 right-3 flex gap-2">
+          <Badge variant={property.isActive ? "default" : "secondary"} className="bg-white/90 text-gray-900 backdrop-blur-sm">
+            {property.isActive ? 'Active' : 'Inactive'}
+          </Badge>
         </div>
+
+        <div className="absolute top-3 left-3">
+          <Badge className="bg-white/90 text-gray-900 backdrop-blur-sm">
+            {PROPERTY_TYPE_LABELS[property.propertyType as PropertyType]}
+          </Badge>
+        </div>
+
+        {/* Title on Image */}
+        <div className="absolute bottom-3 left-3 right-3">
+          <CardTitle className="text-white text-xl mb-1 flex items-center gap-2">
+            <span className="text-2xl">{PROPERTY_TYPE_ICONS[property.propertyType as PropertyType]}</span>
+            {property.name}
+          </CardTitle>
+          <p className="text-white/90 text-sm flex items-center gap-1">
+            <MapPin className="h-3 w-3" />
+            {property.location}
+          </p>
+        </div>
+      </div>
+
+      <CardHeader className="pb-3" onClick={() => onViewDetails(property)}>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -112,22 +126,20 @@ function PropertyCard({ property, onViewDetails }: PropertyCardProps) {
           </div>
         </div>
 
-        {tokenInfo && (
-          <div className="pt-2 border-t">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <p className="text-xs text-gray-500">Total Supply</p>
-                <p className="text-sm font-medium">{formatUnits(tokenInfo.totalSupply, 18)} {property.symbol}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-gray-500">Remaining</p>
-                <p className="text-sm font-medium">
-                  {(parseFloat(maxTokens) - parseFloat(formatUnits(tokenInfo.totalSupply, 18))).toLocaleString()}
-                </p>
-              </div>
+        <div className="pt-2 border-t">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500">Token Symbol</p>
+              <p className="text-sm font-medium">{property.symbol}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500">Creator</p>
+              <p className="text-sm font-medium font-mono text-xs">
+                {property.creator.slice(0, 6)}...{property.creator.slice(-4)}
+              </p>
             </div>
           </div>
-        )}
+        </div>
 
         <Button
           className="w-full"

@@ -23,6 +23,12 @@ export function useUserProfile() {
       return
     }
 
+    // Skip if Supabase is not configured
+    if (!supabase) {
+      console.warn('Supabase not configured, skipping user profile fetch')
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
@@ -83,7 +89,6 @@ export function useUserProfile() {
         type: typeof err,
         hasAddress: !!address,
         errorCode: err instanceof Error && 'code' in err ? (err as any).code : 'unknown',
-        step: existingUser ? 'user_exists' : 'creating_new_user'
       })
 
       const errorMessage = err instanceof Error
@@ -98,7 +103,7 @@ export function useUserProfile() {
 
   // Update user profile
   const updateProfile = useCallback(async (updates: Partial<UserProfile>) => {
-    if (!address || !profile) return null
+    if (!address || !profile || !supabase) return null
 
     setIsLoading(true)
     setError(null)

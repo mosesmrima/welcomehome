@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useReadContract } from 'wagmi'
 import { CONTRACT_ADDRESSES } from '../config'
 import { OWNERSHIP_REGISTRY_ABI } from '../../../lib/contracts'
@@ -74,8 +74,14 @@ export function useUserProperties(address?: Address) {
     },
   })
 
+  // Memoize the empty array to prevent infinite loops
+  const memoizedPropertyIds = useMemo(() =>
+    (propertyIds as bigint[]) || [],
+    [propertyIds]
+  )
+
   return {
-    propertyIds: (propertyIds as bigint[]) || [],
+    propertyIds: memoizedPropertyIds,
     refetch
   }
 }
@@ -217,15 +223,38 @@ export function useCompleteUserPortfolio(address?: Address) {
   const { portfolio, refetch: refetchPortfolio } = useUserPortfolio(address)
   const { propertyIds, refetch: refetchProperties } = useUserProperties(address)
 
+  // Create stable dependencies to prevent infinite loops
+  const propertyIdsKey = useMemo(() =>
+    propertyIds.length > 0 ? propertyIds.map(id => id.toString()).join(',') : '',
+    [propertyIds]
+  )
+
+  const portfolioKey = useMemo(() =>
+    portfolio ? `${portfolio.totalProperties}-${portfolio.totalValue}` : '',
+    [portfolio]
+  )
+
   useEffect(() => {
+    if (!address) {
+      setPortfolioData({
+        portfolio: null,
+        properties: [],
+        ownerships: {},
+        isLoading: false,
+        error: null
+      })
+      return
+    }
+
     async function fetchCompletePortfolio() {
-      if (!address || !propertyIds.length) {
-        setPortfolioData(prev => ({
-          ...prev,
+      if (propertyIds.length === 0) {
+        setPortfolioData({
+          portfolio,
+          properties: [],
+          ownerships: {},
           isLoading: false,
-          properties: propertyIds,
-          portfolio
-        }))
+          error: null
+        })
         return
       }
 
@@ -266,7 +295,7 @@ export function useCompleteUserPortfolio(address?: Address) {
     }
 
     fetchCompletePortfolio()
-  }, [address, propertyIds, portfolio])
+  }, [address, propertyIdsKey, portfolioKey])
 
   const refetchAll = async () => {
     await Promise.all([

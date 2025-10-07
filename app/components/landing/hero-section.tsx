@@ -3,6 +3,7 @@
 import { Button } from "@/app/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { motion } from "framer-motion"
 
 export function HeroSection() {
   return (
@@ -23,18 +24,22 @@ export function HeroSection() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 mb-20">
             <Link href="/dashboard">
-              <Button className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 text-lg font-medium rounded-full transition-all duration-300">
-                Start Investing
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 text-lg font-medium rounded-full transition-all duration-300">
+                  Start Investing
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </motion.div>
             </Link>
             <Link href="#services">
-              <Button
-                variant="ghost"
-                className="text-gray-900 hover:bg-gray-50 px-8 py-4 text-lg font-medium rounded-full transition-all duration-300"
-              >
-                Learn more
-              </Button>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="ghost"
+                  className="text-gray-900 hover:bg-gray-50 px-8 py-4 text-lg font-medium rounded-full transition-all duration-300"
+                >
+                  Learn more
+                </Button>
+              </motion.div>
             </Link>
           </div>
 

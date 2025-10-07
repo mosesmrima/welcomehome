@@ -5,6 +5,7 @@ import { usePublicClient, useWalletClient, useAccount } from 'wagmi'
 import { Address, parseEther, formatUnits } from 'viem'
 import { CONTRACT_ADDRESSES } from '../config'
 import { logError } from '../error-utils'
+import { MOCK_PROPERTIES, PropertyInfo } from '@/app/lib/mock-data/properties'
 
 // Property Factory ABI - Add to your abi.ts file
 const PROPERTY_FACTORY_ABI = [
@@ -113,21 +114,8 @@ const PROPERTY_FACTORY_ABI = [
   }
 ] as const
 
-export interface PropertyInfo {
-  id: number
-  tokenContract: Address
-  handlerContract: Address
-  name: string
-  symbol: string
-  ipfsHash: string
-  totalValue: bigint
-  maxTokens: bigint
-  creator: Address
-  createdAt: bigint
-  isActive: boolean
-  propertyType: number
-  location: string
-}
+// Re-export PropertyInfo for convenience
+export type { PropertyInfo }
 
 export enum PropertyType {
   RESIDENTIAL = 0,
@@ -149,7 +137,13 @@ export function usePropertyFactory() {
 
   // Fetch all properties from factory
   const fetchProperties = useCallback(async () => {
-    if (!publicClient) return
+    if (!publicClient) {
+      // Use mock properties when no client available
+      setProperties(MOCK_PROPERTIES)
+      setPropertyCount(MOCK_PROPERTIES.length)
+      setIsLoading(false)
+      return
+    }
 
     setIsLoading(true)
     setError(null)
@@ -158,7 +152,11 @@ export function usePropertyFactory() {
       // First check if factory contract is deployed
       const factoryAddress = CONTRACT_ADDRESSES.PROPERTY_FACTORY as Address
       if (!factoryAddress || factoryAddress === '0x0000000000000000000000000000000000000000') {
-        throw new Error('Property Factory contract not deployed yet')
+        // Use mock properties as fallback
+        setProperties(MOCK_PROPERTIES)
+        setPropertyCount(MOCK_PROPERTIES.length)
+        setIsLoading(false)
+        return
       }
 
       // Get total property count
@@ -169,12 +167,16 @@ export function usePropertyFactory() {
       }) as bigint
 
       const totalCount = Number(count)
-      setPropertyCount(totalCount)
 
       if (totalCount === 0) {
-        setProperties([])
+        // Use mock properties when no blockchain properties exist
+        setProperties(MOCK_PROPERTIES)
+        setPropertyCount(MOCK_PROPERTIES.length)
+        setIsLoading(false)
         return
       }
+
+      setPropertyCount(totalCount)
 
       // Get all properties in batches to avoid RPC limits
       const batchSize = 10
@@ -217,7 +219,10 @@ export function usePropertyFactory() {
 
     } catch (err) {
       logError('Error fetching properties from factory', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch properties')
+      // Use mock properties as fallback on error
+      setProperties(MOCK_PROPERTIES)
+      setPropertyCount(MOCK_PROPERTIES.length)
+      setError(null) // Don't show error since we have fallback data
     } finally {
       setIsLoading(false)
     }

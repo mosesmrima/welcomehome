@@ -1,7 +1,7 @@
 "use client"
 
 
-import { Search, Bell, Wallet, Home } from "lucide-react"
+import { Search, Bell, Wallet, Home, User } from "lucide-react"
 
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
@@ -11,13 +11,18 @@ import { WalletConnect } from "../web3/wallet-connect"
 import { NotificationBell } from "../ui/notifications"
 import { UserProfileModal } from "../profile/user-profile-modal"
 import { useUserProfile } from "@/app/lib/supabase/hooks/use-user-profile"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 export function Header() {
   const { address, isConnected } = useAccount()
   const { profile } = useUserProfile()
   const [showWalletModal, setShowWalletModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -52,41 +57,45 @@ export function Header() {
           </div>
 
           {/* Wallet Connection */}
-          {isConnected && address ? (
-            <Button
-              variant="outline"
-              onClick={() => setShowWalletModal(true)}
-              className="flex items-center gap-2"
-            >
-              <div className="h-2 w-2 rounded-full bg-green-500"></div>
-              <Wallet className="h-4 w-4" />
-              <span className="hidden sm:inline">{formatAddress(address)}</span>
-            </Button>
-          ) : (
-            <Button
-              onClick={() => setShowWalletModal(true)}
-              className="flex items-center gap-2"
-            >
-              <Wallet className="h-4 w-4" />
-              <span className="hidden sm:inline">Connect Wallet</span>
-            </Button>
-          )}
-
-          {/* User Profile Button */}
-          {isConnected && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowProfileModal(true)}
-              className="flex items-center gap-2"
-            >
-              <User className="h-4 w-4" />
-              {profile?.name && (
-                <span className="hidden sm:inline text-sm">
-                  {profile.name.length > 15 ? `${profile.name.slice(0, 15)}...` : profile.name}
-                </span>
+          {mounted && (
+            <>
+              {isConnected && address ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowWalletModal(true)}
+                  className="flex items-center gap-2"
+                >
+                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                  <Wallet className="h-4 w-4" />
+                  <span className="hidden sm:inline">{formatAddress(address)}</span>
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => setShowWalletModal(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Wallet className="h-4 w-4" />
+                  <span className="hidden sm:inline">Connect Wallet</span>
+                </Button>
               )}
-            </Button>
+
+              {/* User Profile Button */}
+              {isConnected && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowProfileModal(true)}
+                  className="flex items-center gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  {profile?.name && (
+                    <span className="hidden sm:inline text-sm">
+                      {profile.name.length > 15 ? `${profile.name.slice(0, 15)}...` : profile.name}
+                    </span>
+                  )}
+                </Button>
+              )}
+            </>
           )}
 
           {/* Real-time Notification Bell */}

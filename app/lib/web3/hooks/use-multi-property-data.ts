@@ -81,15 +81,19 @@ export function useMultiPropertyData() {
 
           currentPrice = saleInfo[0] // pricePerToken
 
-          // Get metadata from Supabase
-          const { data: dbProperty, error: dbError } = await supabase
-            .from('properties')
-            .select('*')
-            .eq('contract_address', property.tokenContract.toLowerCase())
-            .single()
+          // Get metadata from Supabase (if available)
+          let dbProperty = null
+          if (supabase) {
+            const { data, error: dbError } = await supabase
+              .from('properties')
+              .select('*')
+              .eq('contract_address', property.tokenContract.toLowerCase())
+              .single()
 
-          if (dbError && dbError.code !== 'PGRST116') {
-            console.warn(`Database error for property ${property.id}:`, dbError)
+            if (dbError && dbError.code !== 'PGRST116') {
+              console.warn(`Database error for property ${property.id}:`, dbError)
+            }
+            dbProperty = data
           }
 
           const enrichedProperty: ExtendedPropertyData = {
@@ -257,8 +261,10 @@ export function useMultiPropertyData() {
     })
   }, [propertiesData])
 
-  // Sync property data with database
+  // Sync property data with database (if available)
   const syncWithDatabase = useCallback(async (propertyData: ExtendedPropertyData) => {
+    if (!supabase) return
+
     try {
       const { error } = await supabase
         .from('properties')

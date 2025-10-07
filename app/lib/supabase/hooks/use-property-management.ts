@@ -20,7 +20,7 @@ export function usePropertyManagement() {
     propertyData: Omit<PropertyInsert, 'id' | 'created_at'>,
     imageFiles?: File[]
   ): Promise<PropertyWithImages | null> => {
-    if (!address) return null
+    if (!address || !supabase) return null
 
     setIsLoading(true)
     setError(null)
@@ -74,6 +74,8 @@ export function usePropertyManagement() {
     updates: Partial<PropertyInsert>,
     newImageFiles?: File[]
   ): Promise<PropertyWithImages | null> => {
+    if (!supabase) return null
+
     setIsLoading(true)
     setError(null)
 
@@ -138,6 +140,8 @@ export function usePropertyManagement() {
   const getProperty = useCallback(async (
     contractAddress: string
   ): Promise<PropertyWithImages | null> => {
+    if (!supabase) return null
+
     try {
       const { data: property, error } = await supabase
         .from('properties')
@@ -161,6 +165,8 @@ export function usePropertyManagement() {
 
   // List all properties
   const listProperties = useCallback(async (): Promise<PropertyWithImages[]> => {
+    if (!supabase) return []
+
     try {
       const { data: properties, error } = await supabase
         .from('properties')
@@ -183,6 +189,8 @@ export function usePropertyManagement() {
   const deleteProperty = useCallback(async (
     contractAddress: string
   ): Promise<boolean> => {
+    if (!supabase) return false
+
     setIsLoading(true)
     setError(null)
 

@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/app/components/ui/button"
 import { Home, Menu, X } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -48,9 +49,11 @@ export function Navbar() {
               </span>
             </Link>
             <Link href="/dashboard">
-              <Button className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-4 py-2 rounded-full transition-all duration-300">
-                Get Started
-              </Button>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-4 py-2 rounded-full transition-all duration-300">
+                  Get Started
+                </Button>
+              </motion.div>
             </Link>
           </div>
 
@@ -68,34 +71,50 @@ export function Navbar() {
         </div>
 
         {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-sm">
-            <div className="px-6 py-8 space-y-6">
-              {menuItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="block text-lg font-normal text-gray-900 hover:text-gray-600 transition-colors duration-300"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
-              <div className="pt-6 border-t border-gray-100 space-y-4">
-                <Link href="/dashboard" className="block">
-                  <span className="text-lg font-normal text-gray-600 hover:text-gray-900 transition-colors duration-300">
-                    Sign In
-                  </span>
-                </Link>
-                <Link href="/dashboard" className="block">
-                  <Button className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-6 py-3 rounded-full transition-all duration-300">
-                    Get Started
-                  </Button>
-                </Link>
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              className="md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-sm"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="px-6 py-8 space-y-6">
+                {menuItems.map((item, index) => (
+                  <motion.div
+                    key={item.name}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <Link
+                      href={item.href}
+                      className="block text-lg font-normal text-gray-900 hover:text-gray-600 transition-colors duration-300"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {item.name}
+                    </Link>
+                  </motion.div>
+                ))}
+                <div className="pt-6 border-t border-gray-100 space-y-4">
+                  <Link href="/dashboard" className="block">
+                    <span className="text-lg font-normal text-gray-600 hover:text-gray-900 transition-colors duration-300">
+                      Sign In
+                    </span>
+                  </Link>
+                  <Link href="/dashboard" className="block">
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button className="bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium px-6 py-3 rounded-full transition-all duration-300">
+                        Get Started
+                      </Button>
+                    </motion.div>
+                  </Link>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </nav>
   )

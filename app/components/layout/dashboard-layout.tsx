@@ -5,6 +5,7 @@ import { Sidebar } from "./sidebar"
 import { Header } from "./header"
 import { TransactionToastContainer } from "../ui/transaction-status"
 import { TransactionCacheProvider } from "../web3/transaction-cache-provider"
+import { PageTransition } from "./page-transition"
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -24,7 +25,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Page Content */}
           <main className="flex-1 overflow-y-auto bg-gray-50">
-            {children}
+            <PageTransition>
+              {children}
+            </PageTransition>
           </main>
         </div>
 

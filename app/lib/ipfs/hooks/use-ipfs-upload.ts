@@ -56,22 +56,24 @@ export function useIPFSUpload() {
           const { hash, size } = await ipfs.uploadFile(file)
           const url = ipfs.getGatewayURL(hash)
 
-          // Store document metadata in Supabase
-          const { error: dbError } = await supabase
-            .from('property_documents')
-            .insert({
-              property_id: propertyId,
-              document_type: documentType,
-              filename: file.name,
-              ipfs_hash: hash,
-              file_size: size,
-              mime_type: file.type,
-              uploaded_by: uploadedBy,
-              verified: false
-            })
+          // Store document metadata in Supabase (if available)
+          if (supabase) {
+            const { error: dbError } = await supabase
+              .from('property_documents')
+              .insert({
+                property_id: propertyId,
+                document_type: documentType,
+                filename: file.name,
+                ipfs_hash: hash,
+                file_size: size,
+                mime_type: file.type,
+                uploaded_by: uploadedBy,
+                verified: false
+              })
 
-          if (dbError) {
-            console.warn('Database storage failed, but IPFS upload succeeded:', dbError)
+            if (dbError) {
+              console.warn('Database storage failed, but IPFS upload succeeded:', dbError)
+            }
           }
 
           const result: IPFSUploadResult = {
@@ -127,22 +129,24 @@ export function useIPFSUpload() {
       const { hash, size } = await ipfs.uploadJSON(data)
       const url = ipfs.getGatewayURL(hash)
 
-      // Store metadata in database
-      const { error: dbError } = await supabase
-        .from('property_documents')
-        .insert({
-          property_id: propertyId,
-          document_type: documentType,
-          filename,
-          ipfs_hash: hash,
-          file_size: size,
-          mime_type: 'application/json',
-          uploaded_by: uploadedBy,
-          verified: false
-        })
+      // Store metadata in database (if available)
+      if (supabase) {
+        const { error: dbError } = await supabase
+          .from('property_documents')
+          .insert({
+            property_id: propertyId,
+            document_type: documentType,
+            filename,
+            ipfs_hash: hash,
+            file_size: size,
+            mime_type: 'application/json',
+            uploaded_by: uploadedBy,
+            verified: false
+          })
 
-      if (dbError) {
-        console.warn('Database storage failed, but IPFS upload succeeded:', dbError)
+        if (dbError) {
+          console.warn('Database storage failed, but IPFS upload succeeded:', dbError)
+        }
       }
 
       return {

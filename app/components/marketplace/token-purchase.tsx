@@ -11,6 +11,18 @@ import { useTokenBalance } from '@/app/lib/web3/hooks/use-property-token'
 import { useUserKYCStatus } from '@/app/lib/web3/hooks/use-kyc-registry'
 import { Coins, TrendingUp, AlertCircle, CheckCircle, Building2, FileText } from 'lucide-react'
 import { PropertyInfo } from '@/app/lib/web3/hooks/use-property-factory'
+import Image from 'next/image'
+
+// Property images mapping
+const PROPERTY_IMAGES = [
+  '/images/properties/house-1.jpg',
+  '/images/properties/house-2.jpg',
+  '/images/properties/house-3.jpg',
+  '/images/properties/house-6.jpg',
+  '/images/properties/house-7.jpg',
+  '/images/properties/house-9.jpg',
+  '/images/properties/house-10.jpg',
+]
 
 interface TokenPurchaseProps {
   selectedProperty?: PropertyInfo | null
@@ -150,74 +162,76 @@ export function TokenPurchase({ selectedProperty }: TokenPurchaseProps) {
     )
   }
 
-  return (
-    <Card className="p-6">
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold mb-2">Purchase Tokens</h3>
-        <p className="text-gray-600">Buy property tokens directly from the primary sale</p>
-      </div>
+  const propertyImage = PROPERTY_IMAGES[selectedProperty.id % PROPERTY_IMAGES.length]
 
-      {/* Selected Property Information */}
-      <div className="bg-green-50 p-4 rounded-lg mb-6">
-        <h4 className="font-medium text-green-900 mb-3">Selected Property</h4>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-green-700">Property:</span>
-            <span className="font-medium text-green-900">{selectedProperty.name}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-green-700">Location:</span>
-            <span className="font-medium text-green-900">{selectedProperty.location}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-green-700">Total Value:</span>
-            <span className="font-medium text-green-900">
+  return (
+    <Card className="p-0 overflow-hidden">
+      {/* Property Image Header */}
+      <div className="relative h-64 overflow-hidden">
+        <Image
+          src={propertyImage}
+          alt={selectedProperty.name}
+          fill
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+
+        <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+          <h3 className="text-2xl font-bold mb-1">{selectedProperty.name}</h3>
+          <p className="text-white/90 mb-2">{selectedProperty.location}</p>
+          <div className="flex items-center gap-4 text-sm">
+            <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
+              {selectedProperty.symbol}
+            </span>
+            <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
               ${parseFloat(formatUnits(selectedProperty.totalValue, 18)).toLocaleString()}
             </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-green-700">Token Symbol:</span>
-            <span className="font-medium text-green-900">{selectedProperty.symbol}</span>
-          </div>
         </div>
       </div>
 
-      {/* Sale Information */}
-      <div className="bg-blue-50 p-4 rounded-lg mb-6">
-        <h4 className="font-medium text-blue-900 mb-3">Current Sale Details</h4>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-blue-700">Price per Token:</span>
-            <span className="font-medium text-blue-900">
-              {sale.pricePerToken ? formatUnits(sale.pricePerToken, 18) : '0'} HBAR
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-blue-700">Min Purchase:</span>
-            <span className="font-medium text-blue-900">
-              {sale.minPurchase ? formatUnits(sale.minPurchase, 18) : '0'} tokens
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-blue-700">Max Purchase:</span>
-            <span className="font-medium text-blue-900">
-              {sale.maxPurchase ? formatUnits(sale.maxPurchase, 18) : '0'} tokens
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-blue-700">Tokens Sold:</span>
-            <span className="font-medium text-blue-900">
-              {sale.totalSold ? formatUnits(sale.totalSold, 18) : '0'} / {sale.maxSupply ? formatUnits(sale.maxSupply, 18) : '∞'}
-            </span>
+      <div className="p-6">
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold mb-2">Purchase Tokens</h3>
+          <p className="text-gray-600">Buy property tokens directly from the primary sale</p>
+        </div>
+
+        {/* Sale Information */}
+        <div className="bg-blue-50 p-4 rounded-lg mb-6">
+          <h4 className="font-medium text-blue-900 mb-3">Sale Details</h4>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-blue-700">Price per Token:</span>
+              <span className="font-medium text-blue-900">
+                ${parseFloat(formatUnits(sale.pricePerToken, 18)).toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-blue-700">Min Purchase:</span>
+              <span className="font-medium text-blue-900">
+                {parseFloat(formatUnits(sale.minPurchase, 18)).toLocaleString()} tokens
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-blue-700">Max Purchase:</span>
+              <span className="font-medium text-blue-900">
+                {parseFloat(formatUnits(sale.maxPurchase, 18)).toLocaleString()} tokens
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-blue-700">Available:</span>
+              <span className="font-medium text-blue-900">
+                {parseFloat(formatUnits(sale.maxSupply - sale.totalSold, 18)).toLocaleString()} tokens
+              </span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Purchase Form */}
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Number of Tokens
+        {/* Purchase Form */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Number of Tokens
           </label>
           <Input
             type="number"
@@ -276,6 +290,7 @@ export function TokenPurchase({ selectedProperty }: TokenPurchaseProps) {
             <span>Transaction failed. Please try again.</span>
           </div>
         )}
+        </div>
       </div>
     </Card>
   )

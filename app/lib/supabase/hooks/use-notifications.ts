@@ -19,7 +19,7 @@ export function useNotifications() {
 
   // Fetch notifications for the current user
   const fetchNotifications = useCallback(async () => {
-    if (!address) {
+    if (!address || !supabase) {
       setNotifications([])
       setUnreadCount(0)
       setIsLoading(false)
@@ -68,6 +68,8 @@ export function useNotifications() {
     message: string,
     data?: any
   ): Promise<boolean> => {
+    if (!supabase) return false
+
     try {
       const notification: NotificationInsert = {
         user_address: userAddress.toLowerCase(),
@@ -98,6 +100,8 @@ export function useNotifications() {
 
   // Mark a specific notification as read
   const markNotificationAsRead = useCallback(async (notificationId: string): Promise<void> => {
+    if (!supabase) return
+
     try {
       const { error } = await supabase
         .from('notifications')
@@ -122,7 +126,7 @@ export function useNotifications() {
 
   // Mark all notifications as read
   const markAllAsRead = useCallback(async (): Promise<void> => {
-    if (!address) return
+    if (!address || !supabase) return
 
     try {
       const { error } = await supabase
@@ -143,6 +147,8 @@ export function useNotifications() {
 
   // Delete a notification
   const deleteNotification = useCallback(async (notificationId: string): Promise<void> => {
+    if (!supabase) return
+
     try {
       const { error } = await supabase
         .from('notifications')
@@ -165,7 +171,7 @@ export function useNotifications() {
 
   // Delete all notifications
   const deleteAllNotifications = useCallback(async (): Promise<void> => {
-    if (!address) return
+    if (!address || !supabase) return
 
     try {
       const { error } = await supabase
@@ -184,7 +190,7 @@ export function useNotifications() {
 
   // Subscribe to real-time notifications
   useEffect(() => {
-    if (!address) return
+    if (!address || !supabase) return
 
     const channel = supabase
       .channel('notifications')

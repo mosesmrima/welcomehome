@@ -22,6 +22,7 @@ import {
   ArrowDownRight,
   Clock
 } from 'lucide-react'
+import Image from 'next/image'
 
 interface PropertyHolding {
   propertyId: number
@@ -32,7 +33,19 @@ interface PropertyHolding {
   value: string
   percentage: number
   lastUpdated: Date
+  imageUrl: string
 }
+
+// Property images mapping
+const PROPERTY_IMAGES = [
+  '/images/properties/house-1.jpg',
+  '/images/properties/house-2.jpg',
+  '/images/properties/house-3.jpg',
+  '/images/properties/house-6.jpg',
+  '/images/properties/house-7.jpg',
+  '/images/properties/house-9.jpg',
+  '/images/properties/house-10.jpg',
+]
 
 export function PortfolioOverview() {
   const [holdings, setHoldings] = useState<PropertyHolding[]>([])
@@ -70,7 +83,8 @@ export function PortfolioOverview() {
           balance: mockBalance,
           value: mockValue,
           percentage: mockPercentage,
-          lastUpdated: new Date(Number(propertyInfo.createdAt) * 1000)
+          lastUpdated: new Date(Number(propertyInfo.createdAt) * 1000),
+          imageUrl: PROPERTY_IMAGES[propertyIdNum % PROPERTY_IMAGES.length]
         })
 
         total += parseFloat(mockValue)
@@ -284,35 +298,52 @@ export function PortfolioOverview() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {holdings.map((holding) => (
-                <div key={holding.propertyId} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Building2 className="h-6 w-6 text-blue-600" />
+                <div
+                  key={holding.propertyId}
+                  className="group relative overflow-hidden rounded-2xl border-2 border-gray-200 hover:border-primary-500 transition-all duration-300 hover:shadow-xl cursor-pointer"
+                >
+                  {/* Property Image */}
+                  <div className="relative h-48 overflow-hidden">
+                    <Image
+                      src={holding.imageUrl}
+                      alt={holding.propertyName}
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+
+                    {/* Badge on Image */}
+                    <div className="absolute top-3 right-3">
+                      <Badge className="bg-white/90 text-gray-900 backdrop-blur-sm">
+                        {holding.symbol}
+                      </Badge>
                     </div>
-                    <div>
-                      <h4 className="font-semibold">{holding.propertyName}</h4>
-                      <p className="text-sm text-gray-600">{holding.propertyLocation}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {holding.symbol}
-                        </Badge>
-                        <span className="text-xs text-gray-500">
-                          Updated {holding.lastUpdated.toLocaleDateString()}
-                        </span>
+
+                    {/* Value on Image */}
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <p className="text-white font-bold text-2xl">${holding.value}</p>
+                      <div className="flex items-center gap-2 text-white/90 text-sm">
+                        <span>{holding.balance} tokens</span>
+                        <span>•</span>
+                        <span>{holding.percentage}% of portfolio</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold">${holding.value}</span>
-                      <span className="text-sm text-gray-500">({holding.percentage}%)</span>
+                  {/* Property Details */}
+                  <div className="p-4 bg-white">
+                    <h4 className="font-bold text-lg mb-1">{holding.propertyName}</h4>
+                    <p className="text-sm text-gray-600 mb-3">{holding.propertyLocation}</p>
+
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Updated {holding.lastUpdated.toLocaleDateString()}
+                      </span>
+                      <TrendingUp className="h-4 w-4 text-green-600" />
                     </div>
-                    <p className="text-sm text-gray-600">
-                      {holding.balance} tokens
-                    </p>
                   </div>
                 </div>
               ))}

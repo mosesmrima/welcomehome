@@ -6,6 +6,7 @@ import { Home, Activity, Settings, HelpCircle, LogOut, Instagram, Linkedin, Shop
 import { cn } from "@/app/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Button } from "../ui/button"
+import { motion } from "framer-motion"
 
 const sidebarItems = [
   {
@@ -81,22 +82,28 @@ export function Sidebar() {
 
       {/* Navigation Items */}
       <nav className="flex-1 px-4">
-        {sidebarItems.map((item) => {
+        {sidebarItems.map((item, index) => {
           const Icon = item.icon
           const isActive = pathname === item.href
 
           return (
-            <Link
+            <motion.div
               key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-900 hover:text-white mb-2",
-                isActive && "bg-gray-900 text-white"
-              )}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.05, duration: 0.3 }}
             >
-              <Icon className="h-5 w-5" />
-              {item.name}
-            </Link>
+              <Link
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-all duration-300 hover:bg-gray-900 hover:text-white hover:translate-x-1 mb-2",
+                  isActive && "bg-gray-900 text-white shadow-lg"
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                {item.name}
+              </Link>
+            </motion.div>
           )
         })}
       </nav>
