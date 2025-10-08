@@ -65,32 +65,42 @@ export const CONTRACT_ADDRESSES = {
   GOVERNANCE: process.env.NEXT_PUBLIC_PROPERTY_GOVERNANCE_ADDRESS || '0x0dd79160Ea9358a2F7440f369C5977CE168018b5',
 } as const
 
-// Create connectors array based on available configuration
-const connectors = [
-  injected(),
-  metaMask(),
-]
-
-// Only add WalletConnect if project ID is available
-if (process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID) {
-  connectors.push(
-    walletConnect({
-      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
-    })
-  )
-}
-
 // Determine which Hedera network to use based on environment
 const hederaNetwork = process.env.NEXT_PUBLIC_HEDERA_NETWORK === 'mainnet' ? hederaMainnet : hederaTestnet
+
+// Create connectors dynamically to avoid SSR issues with indexedDB
+const getConnectors = () => {
+  // Check if we're in a browser environment
+  if (typeof window === 'undefined') {
+    return []
+  }
+
+  const connectors = [
+    injected(),
+    metaMask(),
+  ]
+
+  // Only add WalletConnect if project ID is available
+  if (process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID) {
+    connectors.push(
+      walletConnect({
+        projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+      })
+    )
+  }
+
+  return connectors
+}
 
 // Create wagmi config
 export const config = createConfig({
   chains: [hederaNetwork],
-  connectors,
+  connectors: getConnectors(),
   transports: {
     [hederaTestnet.id]: http(process.env.NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL),
     [hederaMainnet.id]: http(process.env.NEXT_PUBLIC_HEDERA_MAINNET_RPC_URL),
   },
+  ssr: true,
 })
 
 // Contract roles

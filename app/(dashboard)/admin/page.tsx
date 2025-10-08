@@ -26,10 +26,27 @@ import {
 import { useUserRoles } from "@/app/lib/web3/hooks/use-roles"
 import { usePropertyStatus, usePauseContract, useSetMaxTokens, useConnectProperty } from "@/app/lib/web3/hooks/use-property-token"
 import { useAccreditedStatus } from "@/app/lib/web3/hooks/use-token-handler"
+import { useMounted } from "@/app/lib/hooks/use-mounted"
+
+// Disable static rendering for this page
+export const dynamic = 'force-dynamic'
 
 export default function AdminPage() {
+  const mounted = useMounted()
   const { address, isConnected } = useAccount()
   const roles = useUserRoles(address)
+
+  if (!mounted) {
+    return (
+      <div className="p-6">
+        <div className="max-w-md mx-auto text-center">
+          <Shield className="h-16 w-16 mx-auto mb-4 text-gray-400 animate-pulse" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Loading...</h1>
+          <p className="text-gray-600">Please wait while we load the admin panel</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!isConnected) {
     return (

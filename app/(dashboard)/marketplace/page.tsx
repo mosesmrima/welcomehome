@@ -8,6 +8,9 @@ import { PropertyDetails } from "@/app/components/marketplace/property-details"
 import { PropertyInfo } from '@/app/lib/web3/hooks/use-property-factory'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
 
+// Disable static rendering for this page
+export const dynamic = 'force-dynamic'
+
 export default function MarketplacePage() {
   const [selectedProperty, setSelectedProperty] = useState<PropertyInfo | null>(null)
   const [activeTab, setActiveTab] = useState("browse")

@@ -2,6 +2,9 @@
 
 import { StakingDashboard } from "@/app/components/staking/staking-dashboard"
 
+// Disable static rendering for this page
+export const dynamic = 'force-dynamic'
+
 export default function StakingPage() {
   return (
     <div className="p-6">

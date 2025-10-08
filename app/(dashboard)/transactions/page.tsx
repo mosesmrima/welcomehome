@@ -10,10 +10,27 @@ import { Search, Filter, MapPin, TrendingUp, TrendingDown, Activity, ShoppingCar
 import { useAccount } from "wagmi"
 import { useTransactionHistory, formatTransactionType } from "@/app/lib/web3/hooks/use-transaction-history"
 import { formatUnits } from "viem"
+import { useMounted } from "@/app/lib/hooks/use-mounted"
+
+// Disable static rendering for this page
+export const dynamic = 'force-dynamic'
 
 export default function TransactionsPage() {
+  const mounted = useMounted()
   const [searchQuery, setSearchQuery] = useState("")
   const { address } = useAccount()
+
+  if (!mounted) {
+    return (
+      <div className="p-6">
+        <div className="max-w-md mx-auto text-center">
+          <Activity className="h-16 w-16 mx-auto mb-4 text-gray-400 animate-pulse" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Loading Transactions...</h1>
+        </div>
+      </div>
+    )
+  }
+
   const { transactions, allTransactions, isLoading, error } = useTransactionHistory(address)
 
   // Group transactions by date

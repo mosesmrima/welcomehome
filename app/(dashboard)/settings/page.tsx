@@ -12,6 +12,7 @@ import { cn } from "@/app/lib/utils"
 import { Upload, Mail, Bell, Shield, User, Save, Loader2, CheckCircle, Clock, XCircle, AlertTriangle } from "lucide-react"
 import { useUserProfile } from "@/app/lib/supabase/hooks/use-user-profile"
 import { useAccount } from "wagmi"
+import { useMounted } from "@/app/lib/hooks/use-mounted"
 
 const tabs = [
   { id: "profile", label: "Profile settings", icon: User },
@@ -20,9 +21,24 @@ const tabs = [
   { id: "email", label: "Email settings", icon: Mail },
 ]
 
+// Disable static rendering for this page
+export const dynamic = 'force-dynamic'
+
 export default function SettingsPage() {
+  const mounted = useMounted()
   const [activeTab, setActiveTab] = useState("profile")
   const { address, isConnected } = useAccount()
+
+  if (!mounted) {
+    return (
+      <div className="p-6">
+        <div className="max-w-md mx-auto text-center">
+          <User className="h-16 w-16 mx-auto mb-4 text-gray-400 animate-pulse" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Loading Settings...</h1>
+        </div>
+      </div>
+    )
+  }
   const { profile, isAccredited } = useUserProfile()
 
   const formatAddress = (addr: string) => {

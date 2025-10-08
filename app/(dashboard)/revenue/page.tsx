@@ -2,6 +2,9 @@
 
 import { RevenueDashboard } from "@/app/components/revenue/revenue-dashboard"
 
+// Disable static rendering for this page
+export const dynamic = 'force-dynamic'
+
 export default function RevenuePage() {
   return (
     <div className="p-6">

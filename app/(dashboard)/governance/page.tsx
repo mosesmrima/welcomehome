@@ -6,6 +6,7 @@ import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
 import { Badge } from "@/app/components/ui/badge"
 import { useAccount } from "wagmi"
+import { useMounted } from "@/app/lib/hooks/use-mounted"
 import { formatUnits } from "viem"
 import {
   Vote,
@@ -33,8 +34,24 @@ import {
   type Proposal
 } from "@/app/lib/web3/hooks/use-property-governance"
 
+// Disable static rendering for this page
+export const dynamic = 'force-dynamic'
+
 export default function GovernancePage() {
+  const mounted = useMounted()
   const { address, isConnected } = useAccount()
+
+  if (!mounted) {
+    return (
+      <div className="p-6">
+        <div className="max-w-md mx-auto text-center">
+          <Vote className="h-16 w-16 mx-auto mb-4 text-gray-400 animate-pulse" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Loading Governance...</h1>
+        </div>
+      </div>
+    )
+  }
+
   const { balance } = useTokenBalance(address)
   const { properties, isLoading: propertiesLoading } = useMultiPropertyData()
   const {

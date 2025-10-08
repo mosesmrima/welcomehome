@@ -15,6 +15,7 @@ export function Web3Provider({ children }: Web3ProviderProps) {
     defaultOptions: {
       queries: {
         refetchOnWindowFocus: false,
+        retry: false,
       },
     },
   }))
@@ -23,12 +24,13 @@ export function Web3Provider({ children }: Web3ProviderProps) {
     setMounted(true)
   }, [])
 
+  // Don't render WagmiProvider during SSR to avoid indexedDB issues
   if (!mounted) {
     return <>{children}</>
   }
 
   return (
-    <WagmiProvider config={config}>
+    <WagmiProvider config={config} reconnectOnMount={false}>
       <QueryClientProvider client={queryClient}>
         {children}
       </QueryClientProvider>

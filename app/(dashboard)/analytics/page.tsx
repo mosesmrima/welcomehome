@@ -26,12 +26,28 @@ import {
   useTransactionVolume,
   useStakingMetrics
 } from "@/app/lib/web3/hooks/use-analytics-data"
+import { useMounted } from "@/app/lib/hooks/use-mounted"
 
 type TimeframeOption = '24h' | '7d' | '30d' | '1y'
 
+// Disable static rendering for this page
+export const dynamic = 'force-dynamic'
+
 export default function AnalyticsPage() {
+  const mounted = useMounted()
   const { isConnected } = useAccount()
   const [selectedTimeframe, setSelectedTimeframe] = useState<TimeframeOption>('7d')
+
+  if (!mounted) {
+    return (
+      <div className="p-6">
+        <div className="max-w-md mx-auto text-center">
+          <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-400 animate-pulse" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Loading Analytics...</h1>
+        </div>
+      </div>
+    )
+  }
 
   const { metrics, isLoading: metricsLoading } = useTokenMetrics()
   const { priceHistory, isLoading: priceLoading } = usePriceHistory(selectedTimeframe)

@@ -13,6 +13,7 @@ import { usePropertyData, usePropertyStats } from "@/app/lib/web3/hooks/use-prop
 import { WalletConnect } from "@/app/components/web3/wallet-connect"
 import { ContractDebug } from "@/app/components/debug/ContractDebug"
 import { formatUnits } from "viem"
+import { useMounted } from "@/app/lib/hooks/use-mounted"
 
 const topLocations = [
   { amount: 50000, location: "Westlands at David" },
@@ -22,8 +23,23 @@ const topLocations = [
   { amount: 50000, location: "Lavington at David" },
 ]
 
+// Disable static rendering for this page
+export const dynamic = 'force-dynamic'
+
 export default function DashboardPage() {
+  const mounted = useMounted()
   const { address, isConnected } = useAccount()
+
+  if (!mounted) {
+    return (
+      <div className="p-6">
+        <div className="max-w-md mx-auto text-center">
+          <Building2 className="h-16 w-16 mx-auto mb-4 text-gray-400 animate-pulse" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Loading Dashboard...</h1>
+        </div>
+      </div>
+    )
+  }
   const { balance } = useTokenBalance(address)
   const tokenInfo = useTokenInfo()
   const propertyStatus = usePropertyStatus()

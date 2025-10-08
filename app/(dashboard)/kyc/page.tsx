@@ -2,6 +2,9 @@
 
 import { KYCSubmission } from "@/app/components/kyc/kyc-submission"
 
+// Disable static rendering for this page
+export const dynamic = 'force-dynamic'
+
 export default function KYCPage() {
   return (
     <div className="p-6 space-y-6">
