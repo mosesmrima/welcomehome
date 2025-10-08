@@ -17,12 +17,18 @@ interface PropertyCardProps {
 
 export function PropertyCard({ property }: PropertyCardProps) {
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer">
       {/* Property Image */}
-      <div className="relative h-40 w-full bg-gray-200">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent" />
-        <div className="absolute bottom-2 left-2">
-          <Badge variant="secondary" className="bg-white/90 text-gray-900">
+      <div className="relative h-48 w-full overflow-hidden">
+        <Image
+          src={property.image}
+          alt={property.name}
+          fill
+          className="object-cover group-hover:scale-110 transition-transform duration-500"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute top-3 right-3">
+          <Badge className="bg-white/90 text-gray-900 backdrop-blur-sm">
             {property.size}
           </Badge>
         </div>

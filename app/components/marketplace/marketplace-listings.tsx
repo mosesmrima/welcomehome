@@ -14,7 +14,8 @@ import {
   usePurchaseFromMarketplace
 } from '@/app/lib/web3/hooks/use-token-handler'
 import { useTokenBalance } from '@/app/lib/web3/hooks/use-property-token'
-import { ShoppingCart, Plus, User, Clock, Coins } from 'lucide-react'
+import { ShoppingCart, Plus, User, Clock, Coins, TrendingUp, CheckCircle2, Tag } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 interface MarketplaceListingsProps {
   showCreateListing?: boolean
@@ -32,33 +33,49 @@ export function MarketplaceListings({ showCreateListing = true }: MarketplaceLis
   ).filter(id => id >= 0)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {showCreateListing && <CreateListing />}
 
-      <Card className="p-6">
-        <div className="mb-6">
-          <h3 className="text-xl font-semibold mb-2">Marketplace Listings</h3>
-          <p className="text-gray-600">Buy and sell property tokens with other investors</p>
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 shadow-2xl">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h3 className="text-3xl font-bold mb-2 text-white">Marketplace Listings</h3>
+            <p className="text-gray-300 text-lg">Buy and sell property tokens with other investors</p>
+          </div>
+          <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm">
+            <ShoppingCart className="h-8 w-8 text-white" />
+          </div>
         </div>
 
         <div className="space-y-4">
           {recentListingIds.length === 0 ? (
-            <div className="text-center py-8">
-              <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-600">No marketplace listings available</p>
-            </div>
+            <motion.div
+              className="text-center py-16 bg-white/5 rounded-2xl backdrop-blur-sm"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ShoppingCart className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+              <p className="text-gray-300 text-lg">No marketplace listings available</p>
+            </motion.div>
           ) : (
-            recentListingIds.map((listingId) => (
-              <ListingCard
+            recentListingIds.map((listingId, index) => (
+              <motion.div
                 key={listingId}
-                listingId={listingId}
-                isSelected={selectedListing === listingId}
-                onSelect={() => setSelectedListing(listingId)}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1, duration: 0.4 }}
+              >
+                <ListingCard
+                  listingId={listingId}
+                  isSelected={selectedListing === listingId}
+                  onSelect={() => setSelectedListing(listingId)}
+                />
+              </motion.div>
             ))
           )}
         </div>
-      </Card>
+      </div>
     </div>
   )
 }
@@ -97,33 +114,69 @@ function CreateListing() {
 
   if (!showForm) {
     return (
-      <Card className="p-6">
+      <motion.div
+        className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-3xl p-8 shadow-2xl"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold">Sell Your Tokens</h3>
-            <p className="text-gray-600">Create a listing to sell your property tokens</p>
+          <div className="flex items-center gap-6">
+            <motion.div
+              className="bg-white/20 p-4 rounded-2xl backdrop-blur-sm"
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <Tag className="h-8 w-8 text-white" />
+            </motion.div>
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-1">Sell Your Tokens</h3>
+              <p className="text-primary-100 text-lg">Create a listing to sell your property tokens</p>
+            </div>
           </div>
-          <Button onClick={() => setShowForm(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create Listing
-          </Button>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Button
+              onClick={() => setShowForm(true)}
+              className="gap-2 bg-white text-primary-600 hover:bg-gray-100 px-6 py-6 text-lg font-semibold rounded-2xl shadow-lg transition-all duration-300"
+            >
+              <Plus className="h-5 w-5" />
+              Create Listing
+            </Button>
+          </motion.div>
         </div>
-      </Card>
+      </motion.div>
     )
   }
 
   return (
-    <Card className="p-6">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold mb-2">Create Token Listing</h3>
-        <p className="text-sm text-gray-600">
-          Your Balance: {balance ? formatUnits(balance, 18) : '0'} tokens
-        </p>
+    <motion.div
+      className="bg-white rounded-3xl p-8 shadow-2xl border border-gray-200"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className="mb-6 flex items-center gap-4">
+        <motion.div
+          className="bg-gradient-to-br from-primary-600 to-primary-700 p-3 rounded-2xl"
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          transition={{ type: "spring", stiffness: 300 }}
+        >
+          <Tag className="h-6 w-6 text-white" />
+        </motion.div>
+        <div>
+          <h3 className="text-2xl font-bold mb-1">Create Token Listing</h3>
+          <p className="text-gray-600">
+            Your Balance: <span className="font-semibold text-primary-600">{balance ? formatUnits(balance, 18) : '0'} tokens</span>
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-semibold text-gray-900 mb-3">
             Amount to Sell
           </label>
           <Input
@@ -133,11 +186,12 @@ function CreateListing() {
             placeholder="Enter token amount"
             min="0"
             step="0.000000000000000001"
+            className="h-12 text-lg rounded-xl"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-semibold text-gray-900 mb-3">
             Price per Token (HBAR)
           </label>
           <Input
@@ -147,45 +201,56 @@ function CreateListing() {
             placeholder="Enter price in HBAR"
             min="0"
             step="0.000000000000000001"
+            className="h-12 text-lg rounded-xl"
           />
         </div>
       </div>
 
       {amount && price && (
-        <div className="bg-gray-50 p-3 rounded-lg mb-4">
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl mb-6 border border-green-200">
           <div className="flex justify-between items-center">
-            <span className="text-gray-700">Total Value:</span>
-            <span className="font-semibold">
+            <div className="flex items-center gap-2">
+              <Coins className="h-5 w-5 text-green-600" />
+              <span className="text-gray-700 font-medium">Total Value:</span>
+            </div>
+            <span className="font-bold text-2xl text-green-700">
               {(parseFloat(amount) * parseFloat(price)).toFixed(6)} HBAR
             </span>
           </div>
         </div>
       )}
 
-      <div className="flex gap-3">
-        <Button
-          onClick={handleCreateListing}
-          disabled={!amount || !price || isPending || isConfirming}
-          className="flex-1"
-        >
-          {isPending ? 'Confirming...' :
-           isConfirming ? 'Creating...' :
-           'Create Listing'}
-        </Button>
-        <Button
-          onClick={resetForm}
-          variant="outline"
-        >
-          Cancel
-        </Button>
+      <div className="flex gap-4">
+        <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button
+            onClick={handleCreateListing}
+            disabled={!amount || !price || isPending || isConfirming}
+            className="w-full h-14 text-lg font-semibold rounded-xl bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg"
+          >
+            {isPending ? 'Confirming...' :
+             isConfirming ? 'Creating...' :
+             'Create Listing'}
+          </Button>
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button
+            onClick={resetForm}
+            variant="outline"
+            className="h-14 px-8 text-lg font-semibold rounded-xl"
+          >
+            Cancel
+          </Button>
+        </motion.div>
       </div>
 
       {error && (
-        <p className="text-red-500 text-sm mt-2">
-          Failed to create listing. Please try again.
-        </p>
+        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+          <p className="text-red-600 font-medium">
+            Failed to create listing. Please try again.
+          </p>
+        </div>
       )}
-    </Card>
+    </motion.div>
   )
 }
 
@@ -232,51 +297,70 @@ function ListingCard({ listingId, isSelected, onSelect }: ListingCardProps) {
 
   return (
     <Card
-      className={`p-4 cursor-pointer transition-colors ${
-        isSelected ? 'ring-2 ring-blue-500' : 'hover:bg-gray-50'
+      className={`p-6 cursor-pointer transition-all duration-300 rounded-2xl border-2 ${
+        isSelected
+          ? 'ring-4 ring-primary-500/30 border-primary-500 shadow-2xl scale-[1.02]'
+          : 'border-gray-200 hover:border-primary-300 hover:shadow-xl'
       }`}
       onClick={onSelect}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <User className="h-4 w-4 text-blue-600" />
+      <div className="flex items-start justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <div className={`p-3 rounded-2xl ${
+            isOwnListing
+              ? 'bg-gradient-to-br from-purple-500 to-purple-600'
+              : 'bg-gradient-to-br from-blue-500 to-blue-600'
+          }`}>
+            <User className="h-6 w-6 text-white" />
           </div>
           <div>
-            <p className="font-medium">Listing #{listingId}</p>
-            <p className="text-sm text-gray-600">
-              Seller: {listing.seller.slice(0, 6)}...{listing.seller.slice(-4)}
+            <p className="font-bold text-lg text-gray-900">Listing #{listingId}</p>
+            <p className="text-sm text-gray-600 font-mono">
+              {listing.seller.slice(0, 8)}...{listing.seller.slice(-6)}
             </p>
           </div>
         </div>
 
         <div className="text-right">
-          <Badge variant={isOwnListing ? "secondary" : "default"}>
+          <Badge
+            variant={isOwnListing ? "secondary" : "default"}
+            className={`px-4 py-2 text-sm font-semibold rounded-full ${
+              isOwnListing
+                ? 'bg-purple-100 text-purple-700'
+                : 'bg-green-100 text-green-700'
+            }`}
+          >
             {isOwnListing ? "Your Listing" : "Available"}
           </Badge>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-3">
-        <div>
-          <p className="text-sm text-gray-600">Amount Available</p>
-          <p className="font-semibold">{formatUnits(listing.amount, 18)} tokens</p>
+      <div className="grid grid-cols-2 gap-6 mb-6">
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+          <div className="flex items-center gap-2 mb-2">
+            <Coins className="h-4 w-4 text-gray-600" />
+            <p className="text-sm font-semibold text-gray-700">Amount Available</p>
+          </div>
+          <p className="font-bold text-xl text-gray-900">{formatUnits(listing.amount, 18)} tokens</p>
         </div>
-        <div>
-          <p className="text-sm text-gray-600">Price per Token</p>
-          <p className="font-semibold">{formatUnits(listing.pricePerToken, 18)} HBAR</p>
+        <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-4 rounded-xl border border-primary-200">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="h-4 w-4 text-primary-700" />
+            <p className="text-sm font-semibold text-primary-700">Price per Token</p>
+          </div>
+          <p className="font-bold text-xl text-primary-800">{formatUnits(listing.pricePerToken, 18)} HBAR</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-        <Clock className="h-3 w-3" />
-        <span>Listed {new Date(Number(listing.listingTime) * 1000).toLocaleDateString()}</span>
+      <div className="flex items-center gap-2 text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded-xl">
+        <Clock className="h-4 w-4 text-gray-500" />
+        <span className="font-medium">Listed {new Date(Number(listing.listingTime) * 1000).toLocaleDateString()}</span>
       </div>
 
       {isSelected && !isOwnListing && (
-        <div className="border-t pt-4 space-y-3">
+        <div className="border-t-2 border-gray-200 pt-6 space-y-4 mt-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-bold text-gray-900 mb-3">
               Amount to Purchase
             </label>
             <Input
@@ -287,33 +371,41 @@ function ListingCard({ listingId, isSelected, onSelect }: ListingCardProps) {
               min="0"
               max={formatUnits(maxPurchaseAmount, 18)}
               step="0.000000000000000001"
+              className="h-12 text-lg rounded-xl"
             />
           </div>
 
           {purchaseAmount && (
-            <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-2xl border border-blue-200">
               <div className="flex justify-between items-center">
-                <span className="text-gray-700">Total Cost:</span>
-                <span className="font-semibold">{calculateCost()} HBAR</span>
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5 text-blue-600" />
+                  <span className="text-gray-700 font-semibold">Total Cost:</span>
+                </div>
+                <span className="font-bold text-2xl text-blue-700">{calculateCost()} HBAR</span>
               </div>
             </div>
           )}
 
-          <Button
-            onClick={handlePurchase}
-            disabled={!purchaseAmount || isPending || isConfirming}
-            className="w-full gap-2"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            {isPending ? 'Confirming...' :
-             isConfirming ? 'Processing...' :
-             'Purchase Tokens'}
-          </Button>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button
+              onClick={handlePurchase}
+              disabled={!purchaseAmount || isPending || isConfirming}
+              className="w-full gap-2 h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg transition-all duration-300"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {isPending ? 'Confirming Transaction...' :
+               isConfirming ? 'Processing Purchase...' :
+               'Purchase Tokens'}
+            </Button>
+          </motion.div>
 
           {error && (
-            <p className="text-red-500 text-sm">
-              Purchase failed. Please try again.
-            </p>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <p className="text-red-600 font-medium">
+                Purchase failed. Please try again.
+              </p>
+            </div>
           )}
         </div>
       )}

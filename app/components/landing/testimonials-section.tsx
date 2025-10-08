@@ -1,88 +1,107 @@
 "use client"
 
-import { Card, CardContent } from "@/app/components/ui/card"
-import { Star } from "lucide-react"
-
-const testimonials = [
-  {
-    name: "Sarah Chen",
-    location: "Toronto, Canada",
-    content: "Welcome Home made it possible for me to invest in prime real estate back home in Kenya. The process was transparent and I love receiving my monthly returns.",
-    rating: 5,
-    investment: "$2,500"
-  },
-  {
-    name: "David Ochieng",
-    location: "London, UK",
-    content: "I never thought I could own property in Nairobi while living abroad. This platform has revolutionized diaspora investment opportunities.",
-    rating: 5,
-    investment: "$5,000"
-  },
-  {
-    name: "Grace Mutua",
-    location: "Atlanta, USA",
-    content: "The tokenized approach gives me flexibility to invest small amounts and diversify across multiple properties. Brilliant concept!",
-    rating: 5,
-    investment: "$1,200"
-  }
-]
+import { Star, Quote } from "lucide-react"
+import { motion } from "framer-motion"
 
 export function TestimonialsSection() {
+  const testimonials = [
+    {
+      name: "Sarah Okonkwo",
+      role: "Property Investor",
+      location: "London, UK",
+      image: "SO",
+      content: "Welcome Home made it incredibly easy to invest in property back home. The blockchain technology gives me complete transparency and peace of mind.",
+      rating: 5
+    },
+    {
+      name: "Michael Chen",
+      role: "Real Estate Portfolio Manager",
+      location: "New York, USA",
+      image: "MC",
+      content: "The fractional ownership model is revolutionary. I've diversified my portfolio across multiple properties with just a fraction of traditional investment.",
+      rating: 5
+    },
+    {
+      name: "Amara Johnson",
+      role: "First-Time Investor",
+      location: "Toronto, Canada",
+      image: "AJ",
+      content: "As someone new to real estate investment, the platform is intuitive and the support team is exceptional. I'm building wealth for my family's future.",
+      rating: 5
+    }
+  ]
+
   return (
-    <section className="py-24 bg-gray-50">
+    <section className="py-32 bg-white">
       <div className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-medium text-gray-900 mb-6">
-            Trusted by Diaspora Investors
+        {/* Section Header */}
+        <div className="max-w-4xl mx-auto text-center mb-20">
+          <h2 className="text-5xl md:text-6xl font-medium text-gray-900 mb-8 tracking-tight">
+            Trusted by Investors Worldwide
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Join thousands of diaspora investors building wealth through blockchain-powered real estate
+          <p className="text-xl md:text-2xl text-gray-600 leading-relaxed font-normal">
+            Join thousands of investors building generational wealth through blockchain-powered real estate.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
+        {/* Testimonials Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {testimonials.map((testimonial, index) => (
-            <Card key={index} className="bg-white border-0 shadow-sm hover:shadow-lg transition-shadow duration-300">
-              <CardContent className="p-8">
-                <div className="flex items-center mb-4">
-                  {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
+            <motion.div
+              key={index}
+              className="bg-gray-50 rounded-3xl p-8 hover:shadow-xl transition-shadow duration-300"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1, duration: 0.4 }}
+            >
+              {/* Quote Icon */}
+              <Quote className="w-10 h-10 text-gray-300 mb-6" />
 
-                <blockquote className="text-gray-700 mb-6 leading-relaxed">
-                  "{testimonial.content}"
-                </blockquote>
+              {/* Rating */}
+              <div className="flex gap-1 mb-4">
+                {[...Array(testimonial.rating)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 fill-gray-900 text-gray-900" />
+                ))}
+              </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-gray-900">{testimonial.name}</div>
-                    <div className="text-sm text-gray-500">{testimonial.location}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-gray-500">Total Investment</div>
-                    <div className="font-semibold text-green-600">{testimonial.investment}</div>
-                  </div>
+              {/* Content */}
+              <p className="text-gray-700 leading-relaxed font-normal mb-8">
+                {testimonial.content}
+              </p>
+
+              {/* Author */}
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white font-semibold">
+                  {testimonial.image}
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <p className="font-medium text-gray-900">{testimonial.name}</p>
+                  <p className="text-sm text-gray-600">{testimonial.role}</p>
+                  <p className="text-xs text-gray-500">{testimonial.location}</p>
+                </div>
+              </div>
+            </motion.div>
           ))}
         </div>
 
-        <div className="bg-white rounded-2xl p-8 md:p-12 text-center shadow-sm">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div>
-              <div className="text-3xl font-bold text-gray-900 mb-2">$2.3M+</div>
-              <div className="text-gray-600">Total Investment Volume</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-gray-900 mb-2">1,250+</div>
-              <div className="text-gray-600">Active Investors</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-gray-900 mb-2">15+</div>
-              <div className="text-gray-600">Properties Tokenized</div>
-            </div>
+        {/* Stats Section */}
+        <div className="mt-24 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div>
+            <p className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">5,000+</p>
+            <p className="text-gray-600">Active Investors</p>
+          </div>
+          <div>
+            <p className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">$50M+</p>
+            <p className="text-gray-600">Assets Under Management</p>
+          </div>
+          <div>
+            <p className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">150+</p>
+            <p className="text-gray-600">Properties Listed</p>
+          </div>
+          <div>
+            <p className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">25+</p>
+            <p className="text-gray-600">Countries Served</p>
           </div>
         </div>
       </div>
