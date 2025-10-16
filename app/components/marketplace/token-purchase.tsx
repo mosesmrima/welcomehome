@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -9,6 +9,7 @@ import { useAccount } from 'wagmi'
 import { useTokenSale, usePurchaseTokens } from '@/app/lib/web3/hooks/use-token-handler'
 import { useTokenBalance } from '@/app/lib/web3/hooks/use-property-token'
 import { useUserKYCStatus } from '@/app/lib/web3/hooks/use-kyc-registry'
+import { useUserProperties } from '@/app/lib/hooks/use-user-properties'
 import { Coins, TrendingUp, AlertCircle, CheckCircle, Building2, FileText } from 'lucide-react'
 import { PropertyInfo } from '@/app/lib/web3/hooks/use-property-factory'
 import Image from 'next/image'
@@ -35,9 +36,10 @@ export function TokenPurchase({ selectedProperty }: TokenPurchaseProps) {
   const { purchaseTokens, isPending, isConfirming, isConfirmed, error } = usePurchaseTokens()
   const { balance, refetch: refetchBalance } = useTokenBalance(address)
   const { status, isApproved, isAccredited, record, canPurchase } = useUserKYCStatus(address)
+  const { addProperty } = useUserProperties()
 
   const handlePurchase = () => {
-    if (!purchaseAmount || !sale) return
+    if (!purchaseAmount || !sale || !selectedProperty) return
 
     try {
       const amount = parseUnits(purchaseAmount, 18) // Assuming 18 decimals
@@ -46,6 +48,35 @@ export function TokenPurchase({ selectedProperty }: TokenPurchaseProps) {
       console.error('Error purchasing tokens:', err)
     }
   }
+
+  // Save purchase to user properties when transaction is confirmed
+  useEffect(() => {
+    if (isConfirmed && selectedProperty && purchaseAmount && sale) {
+      const propertyImage = PROPERTY_IMAGES[selectedProperty.id % PROPERTY_IMAGES.length]
+      const tokensNum = parseFloat(purchaseAmount)
+      const totalCost = parseFloat(calculateCost())
+
+      // Mock data - in production, these would come from property metadata
+      const randomChange = (Math.random() * 20 - 5).toFixed(1) // Random change between -5% and +15%
+
+      addProperty({
+        propertyId: selectedProperty.id,
+        propertyName: selectedProperty.name,
+        location: selectedProperty.location,
+        coordinates: `${(Math.random() * 180 - 90).toFixed(4)}° N, ${(Math.random() * 360 - 180).toFixed(4)}° W`,
+        parcels: Math.floor(tokensNum), // Using tokens as parcels for now
+        size: Math.floor(Math.random() * 10000 + 2000), // Random size between 2000-12000 sqft
+        price: totalCost,
+        tokensPurchased: tokensNum,
+        purchaseDate: new Date().toISOString(),
+        image: propertyImage,
+        change: parseFloat(randomChange),
+      })
+
+      // Reset form
+      setPurchaseAmount('')
+    }
+  }, [isConfirmed, selectedProperty, purchaseAmount, sale, addProperty])
 
   const calculateCost = () => {
     if (!purchaseAmount || !sale) return '0'

@@ -92,6 +92,28 @@ function PropertyCard({ property, onViewDetails }: PropertyCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Property Description */}
+        {property.description && (
+          <div className="pb-3 border-b">
+            <p className="text-sm text-gray-700 line-clamp-2">
+              {property.description}
+            </p>
+          </div>
+        )}
+
+        {/* Societal Impact */}
+        {property.societalImpact && (
+          <div className="pb-3 border-b bg-blue-50 -mx-6 px-6 py-3">
+            <p className="text-xs font-semibold text-blue-900 mb-1 flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              Community Impact
+            </p>
+            <p className="text-sm text-blue-800 line-clamp-3">
+              {property.societalImpact}
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <p className="text-sm text-gray-600 flex items-center gap-1">

@@ -11,6 +11,8 @@ import { useCompleteUserPortfolio, useUserPortfolio } from '@/app/lib/web3/hooks
 import { usePropertyFactory } from '@/app/lib/web3/hooks/use-property-factory'
 import { useClaimableRevenue } from '@/app/lib/web3/hooks/use-token-handler'
 import { useStakingInfo, useStakingRewards } from '@/app/lib/web3/hooks/use-token-handler'
+import { useUserProperties } from '@/app/lib/hooks/use-user-properties'
+import { UserPropertyItem } from '../properties/user-property-item'
 import {
   DollarSign,
   TrendingUp,
@@ -20,7 +22,9 @@ import {
   PieChart,
   ArrowUpRight,
   ArrowDownRight,
-  Clock
+  Clock,
+  List,
+  Grid3x3
 } from 'lucide-react'
 import Image from 'next/image'
 
@@ -51,6 +55,7 @@ export function PortfolioOverview() {
   const [holdings, setHoldings] = useState<PropertyHolding[]>([])
   const [totalValue, setTotalValue] = useState('0')
   const [dailyChange, setDailyChange] = useState({ amount: '0', percentage: '0', isPositive: true })
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
 
   const { address, isConnected } = useAccount()
   const { portfolio, properties, isLoading, error, refetch } = useCompleteUserPortfolio(address)
@@ -58,6 +63,7 @@ export function PortfolioOverview() {
   const { claimableAmount } = useClaimableRevenue(address)
   const { stakingInfo } = useStakingInfo(address)
   const { rewards } = useStakingRewards(address)
+  const { properties: userProperties, isLoading: isLoadingUserProps } = useUserProperties()
 
   useEffect(() => {
     if (!portfolio || !allProperties.length || !properties.length) return
@@ -173,7 +179,7 @@ export function PortfolioOverview() {
     )
   }
 
-  const hasInvestments = holdings.length > 0
+  const hasInvestments = holdings.length > 0 || userProperties.length > 0
 
   return (
     <div className="space-y-6">
@@ -278,11 +284,31 @@ export function PortfolioOverview() {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <PieChart className="h-5 w-5" />
-              Property Holdings
+              Your Properties
             </div>
-            {hasInvestments && (
-              <Badge variant="outline">{holdings.length} properties</Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {hasInvestments && (
+                <Badge variant="outline">{userProperties.length || holdings.length} properties</Badge>
+              )}
+              <div className="flex gap-1 ml-2">
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setViewMode('grid')}
+                >
+                  <Grid3x3 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -298,56 +324,79 @@ export function PortfolioOverview() {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {holdings.map((holding) => (
-                <div
-                  key={holding.propertyId}
-                  className="group relative overflow-hidden rounded-2xl border-2 border-gray-200 hover:border-primary-500 transition-all duration-300 hover:shadow-xl cursor-pointer"
-                >
-                  {/* Property Image */}
-                  <div className="relative h-48 overflow-hidden">
-                    <Image
-                      src={holding.imageUrl}
-                      alt={holding.propertyName}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+            <>
+              {viewMode === 'list' ? (
+                <div className="space-y-3">
+                  {userProperties.map((property) => (
+                    <UserPropertyItem
+                      key={property.propertyId}
+                      property={{
+                        id: property.propertyId,
+                        name: property.propertyName,
+                        location: property.location,
+                        coordinates: property.coordinates,
+                        parcels: property.parcels,
+                        size: property.size,
+                        price: property.price,
+                        change: property.change,
+                        image: property.image,
+                      }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {holdings.map((holding) => (
+                    <div
+                      key={holding.propertyId}
+                      className="group relative overflow-hidden rounded-2xl border-2 border-gray-200 hover:border-primary-500 transition-all duration-300 hover:shadow-xl cursor-pointer"
+                    >
+                      {/* Property Image */}
+                      <div className="relative h-48 overflow-hidden">
+                        <Image
+                          src={holding.imageUrl}
+                          alt={holding.propertyName}
+                          fill
+                          className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
-                    {/* Badge on Image */}
-                    <div className="absolute top-3 right-3">
-                      <Badge className="bg-white/90 text-gray-900 backdrop-blur-sm">
-                        {holding.symbol}
-                      </Badge>
-                    </div>
+                        {/* Badge on Image */}
+                        <div className="absolute top-3 right-3">
+                          <Badge className="bg-white/90 text-gray-900 backdrop-blur-sm">
+                            {holding.symbol}
+                          </Badge>
+                        </div>
 
-                    {/* Value on Image */}
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <p className="text-white font-bold text-2xl">${holding.value}</p>
-                      <div className="flex items-center gap-2 text-white/90 text-sm">
-                        <span>{holding.balance} tokens</span>
-                        <span>•</span>
-                        <span>{holding.percentage}% of portfolio</span>
+                        {/* Value on Image */}
+                        <div className="absolute bottom-3 left-3 right-3">
+                          <p className="text-white font-bold text-2xl">${holding.value}</p>
+                          <div className="flex items-center gap-2 text-white/90 text-sm">
+                            <span>{holding.balance} tokens</span>
+                            <span>•</span>
+                            <span>{holding.percentage}% of portfolio</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Property Details */}
+                      <div className="p-4 bg-white">
+                        <h4 className="font-bold text-lg mb-1">{holding.propertyName}</h4>
+                        <p className="text-sm text-gray-600 mb-3">{holding.propertyLocation}</p>
+
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Updated {holding.lastUpdated.toLocaleDateString()}
+                          </span>
+                          <TrendingUp className="h-4 w-4 text-green-600" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Property Details */}
-                  <div className="p-4 bg-white">
-                    <h4 className="font-bold text-lg mb-1">{holding.propertyName}</h4>
-                    <p className="text-sm text-gray-600 mb-3">{holding.propertyLocation}</p>
-
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Updated {holding.lastUpdated.toLocaleDateString()}
-                      </span>
-                      <TrendingUp className="h-4 w-4 text-green-600" />
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

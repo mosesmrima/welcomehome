@@ -17,6 +17,8 @@ export interface PropertyInfo {
   isActive: boolean
   propertyType: number
   location: string
+  description?: string
+  societalImpact?: string
 }
 
 // Mock property data for demonstration
@@ -34,7 +36,9 @@ export const MOCK_PROPERTIES: PropertyInfo[] = [
     createdAt: BigInt(Math.floor(Date.now() / 1000) - 86400 * 30),
     isActive: true,
     propertyType: 0, // RESIDENTIAL
-    location: 'Beverly Hills, California, USA'
+    location: 'Beverly Hills, California, USA',
+    description: 'A stunning 6-bedroom luxury villa featuring modern architecture, infinity pool, and panoramic city views. Perfect for families seeking an upscale lifestyle in one of the most prestigious neighborhoods.',
+    societalImpact: 'Creates opportunities for the African diaspora to build generational wealth through property ownership in premium markets. Enables community members to invest in high-value real estate previously inaccessible, fostering economic empowerment and creating pathways for family legacy building.'
   },
   {
     id: 1,
@@ -49,7 +53,9 @@ export const MOCK_PROPERTIES: PropertyInfo[] = [
     createdAt: BigInt(Math.floor(Date.now() / 1000) - 86400 * 25),
     isActive: true,
     propertyType: 0, // RESIDENTIAL
-    location: 'Manhattan, New York, USA'
+    location: 'Manhattan, New York, USA',
+    description: 'Contemporary 2-bedroom apartment in the heart of Manhattan with floor-to-ceiling windows, premium finishes, and access to world-class amenities including gym, rooftop lounge, and concierge services.',
+    societalImpact: 'Provides diaspora communities with a foothold in major urban centers, enabling participation in metropolitan real estate markets. Strengthens connections to cultural and economic hubs while building equity for future generations and supporting wealth accumulation.'
   },
   {
     id: 2,
@@ -64,7 +70,9 @@ export const MOCK_PROPERTIES: PropertyInfo[] = [
     createdAt: BigInt(Math.floor(Date.now() / 1000) - 86400 * 20),
     isActive: true,
     propertyType: 0, // RESIDENTIAL
-    location: 'Malibu, California, USA'
+    location: 'Malibu, California, USA',
+    description: 'Breathtaking 4-bedroom beachfront property with direct ocean access, expansive outdoor decks, and stunning sunset views. Ideal for luxury vacation rentals or personal retreat.',
+    societalImpact: 'Opens doors to coastal living and vacation property ownership, traditionally out of reach for many. Creates rental income opportunities while establishing legacy assets that can be passed down, strengthening family wealth and creating spaces for cultural gatherings and reunions.'
   },
   {
     id: 3,
@@ -79,7 +87,9 @@ export const MOCK_PROPERTIES: PropertyInfo[] = [
     createdAt: BigInt(Math.floor(Date.now() / 1000) - 86400 * 15),
     isActive: true,
     propertyType: 1, // COMMERCIAL
-    location: 'Downtown Los Angeles, California, USA'
+    location: 'Downtown Los Angeles, California, USA',
+    description: 'Prime commercial real estate featuring 25,000 sq ft of retail and office space with high foot traffic and established tenants. Generates consistent rental income with strong appreciation potential.',
+    societalImpact: 'Empowers community members to own commercial real estate and participate in business districts. Enables collective ownership of income-generating assets, creating sustainable revenue streams that support community initiatives, entrepreneurship, and economic self-determination.'
   },
   {
     id: 4,
@@ -94,7 +104,9 @@ export const MOCK_PROPERTIES: PropertyInfo[] = [
     createdAt: BigInt(Math.floor(Date.now() / 1000) - 86400 * 12),
     isActive: true,
     propertyType: 0, // RESIDENTIAL
-    location: 'Aspen, Colorado, USA'
+    location: 'Aspen, Colorado, USA',
+    description: 'Cozy 3-bedroom mountain cabin nestled in the Rockies, featuring rustic charm with modern upgrades, wood-burning fireplace, and proximity to world-class skiing and hiking trails.',
+    societalImpact: 'Democratizes access to vacation and seasonal properties in premium locations. Enables families to create meaningful memories and traditions in mountain retreats, fostering wellness, cultural bonding, and diversifying community investment portfolios beyond urban areas.'
   },
   {
     id: 5,
@@ -109,7 +121,9 @@ export const MOCK_PROPERTIES: PropertyInfo[] = [
     createdAt: BigInt(Math.floor(Date.now() / 1000) - 86400 * 10),
     isActive: true,
     propertyType: 3, // MIXED_USE
-    location: 'Seattle, Washington, USA'
+    location: 'Seattle, Washington, USA',
+    description: 'Versatile mixed-use property featuring residential lofts above ground-floor retail spaces. Located in a vibrant neighborhood with strong rental demand from both residential and commercial tenants.',
+    societalImpact: 'Bridges residential and commercial investment opportunities, offering diverse revenue streams. Supports community entrepreneurship by providing retail spaces while creating housing, fostering local business development and economic resilience in growing urban areas.'
   },
   {
     id: 6,
@@ -124,6 +138,8 @@ export const MOCK_PROPERTIES: PropertyInfo[] = [
     createdAt: BigInt(Math.floor(Date.now() / 1000) - 86400 * 8),
     isActive: true,
     propertyType: 0, // RESIDENTIAL
-    location: 'Austin, Texas, USA'
+    location: 'Austin, Texas, USA',
+    description: 'Spacious 4-bedroom family home in a thriving suburban community with excellent schools, parks, and growing tech industry presence. Features modern kitchen, large backyard, and home office space.',
+    societalImpact: 'Makes suburban homeownership achievable for diaspora families seeking quality education and safe communities. Builds wealth through stable appreciation while providing foundations for family growth, educational excellence, and long-term community integration and prosperity.'
   }
 ]

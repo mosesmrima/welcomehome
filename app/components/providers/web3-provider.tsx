@@ -23,14 +23,10 @@ export function Web3Provider({ children }: Web3ProviderProps) {
     setMounted(true)
   }, [])
 
-  if (!mounted) {
-    return <>{children}</>
-  }
-
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        {children}
+        {mounted ? children : null}
       </QueryClientProvider>
     </WagmiProvider>
   )

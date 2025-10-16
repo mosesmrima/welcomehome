@@ -10,9 +10,14 @@ import { motion } from "framer-motion"
 
 const sidebarItems = [
   {
+    name: "Home",
+    href: "/home",
+    icon: Home,
+  },
+  {
     name: "Dashboard",
     href: "/dashboard",
-    icon: Home,
+    icon: BarChart3,
   },
   {
     name: "Properties",
