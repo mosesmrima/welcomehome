@@ -1,13 +1,18 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { Search, Bell } from 'lucide-react';
-import IdentityVerification from '../components/IdentityVerification';
-import TopLocations from '../components/TopLocations';
-import PropertyCards from '../components/PropertyCards';
+import IdentityVerification from '../../src/components/IdentityVerification';
+import TopLocations from '../../src/components/TopLocations';
+import PropertyCards from '../../src/components/PropertyCards';
 
-interface OnboardingPageProps {
-  onVerificationComplete: () => void;
-}
+export default function OnboardingPage() {
+  const router = useRouter();
 
-export default function OnboardingPage({ onVerificationComplete }: OnboardingPageProps) {
+  const handleVerificationComplete = () => {
+    router.push('/home');
+  };
+
   const mockTransactions = [
     { id: '1', location: 'Nigeria', amount: 10000, time: 'Just now' },
     { id: '2', location: 'UK', amount: 10000, time: 'Just now' },
@@ -57,7 +62,7 @@ export default function OnboardingPage({ onVerificationComplete }: OnboardingPag
               <IdentityVerification
                 currentStep={2}
                 totalSteps={3}
-                onVerify={onVerificationComplete}
+                onVerify={handleVerificationComplete}
               />
               <PropertyCards />
             </div>

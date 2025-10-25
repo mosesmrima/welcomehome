@@ -1,3 +1,5 @@
+'use client';
+
 import { CheckCircle2, Circle, ChevronRight } from 'lucide-react';
 
 interface IdentityVerificationProps {

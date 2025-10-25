@@ -1,8 +1,10 @@
+'use client';
+
 import { Search, Bell, Sparkles } from 'lucide-react';
-import BalanceCard from '../components/BalanceCard';
-import MeterSquareCard from '../components/MeterSquareCard';
-import PropertyTable from '../components/PropertyTable';
-import TopLocations from '../components/TopLocations';
+import BalanceCard from '../../../src/components/BalanceCard';
+import MeterSquareCard from '../../../src/components/MeterSquareCard';
+import PropertyTable from '../../../src/components/PropertyTable';
+import TopLocations from '../../../src/components/TopLocations';
 
 export default function HomePage() {
   const mockTransactions = [

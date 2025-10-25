@@ -1,3 +1,5 @@
+'use client';
+
 import { LayoutGrid, Clock, DollarSign, TrendingUp, Download, Share2, List } from 'lucide-react';
 import { useState } from 'react';
 import ShareModal from './ShareModal';

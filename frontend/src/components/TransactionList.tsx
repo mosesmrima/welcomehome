@@ -1,3 +1,5 @@
+'use client';
+
 import { MapPin, LayoutGrid, Clock, Eye } from 'lucide-react';
 
 interface Transaction {

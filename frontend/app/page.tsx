@@ -1,10 +1,15 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { ArrowRight, MapPin, TrendingUp, Shield, CheckCircle } from 'lucide-react';
 
-interface LandingPageProps {
-  onGetStarted: () => void;
-}
+export default function LandingPage() {
+  const router = useRouter();
 
-export default function LandingPage({ onGetStarted }: LandingPageProps) {
+  const handleGetStarted = () => {
+    router.push('/onboarding');
+  };
+
   return (
     <div className="h-screen w-full overflow-hidden bg-white relative">
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50"></div>
@@ -21,7 +26,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
           <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">LandVault</span>
         </div>
         <button
-          onClick={onGetStarted}
+          onClick={handleGetStarted}
           className="px-4 py-2 md:px-8 md:py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl text-sm md:text-base font-semibold hover:shadow-xl hover:shadow-emerald-500/30 transition-all hover:scale-105"
         >
           Get Started
@@ -45,7 +50,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
 
             <div className="flex flex-col sm:flex-row gap-4 pt-2 md:pt-4">
               <button
-                onClick={onGetStarted}
+                onClick={handleGetStarted}
                 className="group px-8 py-4 md:px-10 md:py-5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-2xl font-bold text-base md:text-lg transition-all hover:shadow-2xl hover:shadow-emerald-500/40 flex items-center justify-center gap-3"
               >
                 Start Investing Now

@@ -1,3 +1,5 @@
+'use client';
+
 import { X, MapPin, TrendingUp, Users, Calendar, Download, Share2 } from 'lucide-react';
 
 interface PropertyDetailModalProps {

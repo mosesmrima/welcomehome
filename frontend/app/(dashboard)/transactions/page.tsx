@@ -1,22 +1,15 @@
+'use client';
+
 import { Search, Calendar, Filter } from 'lucide-react';
-import TransactionStats from '../components/TransactionStats';
-import TransactionList from '../components/TransactionList';
+import TransactionStats from '../../../src/components/TransactionStats';
+import TransactionList from '../../../src/components/TransactionList';
 
-interface Transaction {
-  id: string;
-  time: string;
-  location: string;
-  places: number;
-  units: number;
-  amount: number;
-  status: string;
-}
+export default function TransactionsPage() {
+  const handleViewProperty = () => {
+    // Handle property view - could navigate to property details
+    console.log('View property details');
+  };
 
-interface TransactionsPageProps {
-  onViewProperty: () => void;
-}
-
-export default function TransactionsPage({ onViewProperty }: TransactionsPageProps) {
   return (
     <div className="flex flex-1 overflow-hidden">
       <div className="flex-1 overflow-auto">
@@ -66,7 +59,7 @@ export default function TransactionsPage({ onViewProperty }: TransactionsPagePro
               </div>
             </div>
 
-            <TransactionList onTransactionClick={onViewProperty} />
+            <TransactionList onTransactionClick={handleViewProperty} />
           </div>
         </main>
       </div>
