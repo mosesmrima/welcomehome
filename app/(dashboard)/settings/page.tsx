@@ -9,13 +9,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Badge } from "@/app/components/ui/badge"
 import { Label } from "@/app/components/ui/label"
 import { cn } from "@/app/lib/utils"
-import { Upload, Mail, Bell, Shield, User, Save, Loader2, CheckCircle, Clock, XCircle, AlertTriangle } from "lucide-react"
+import { Upload, Mail, Bell, Shield, User, Save, Loader2, CheckCircle, Clock, XCircle, AlertTriangle, FileText } from "lucide-react"
 import { useUserProfile } from "@/app/lib/supabase/hooks/use-user-profile"
 import { useAccount } from "wagmi"
 import { useMounted } from "@/app/lib/hooks/use-mounted"
 
 const tabs = [
   { id: "profile", label: "Profile settings", icon: User },
+  { id: "kyc", label: "KYC Verification", icon: FileText },
   { id: "security", label: "Security settings", icon: Shield },
   { id: "notifications", label: "Notification settings", icon: Bell },
   { id: "email", label: "Email settings", icon: Mail },
@@ -124,11 +125,230 @@ export default function SettingsPage() {
         {/* Tab Content */}
         <div className="p-6">
           {activeTab === "profile" && <ProfileSettings />}
+          {activeTab === "kyc" && <KYCSettings />}
           {activeTab === "security" && <SecuritySettings />}
           {activeTab === "notifications" && <NotificationSettings />}
           {activeTab === "email" && <EmailSettings />}
         </div>
       </Card>
+    </div>
+  )
+}
+
+function KYCSettings() {
+  const { profile } = useUserProfile()
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadSuccess, setUploadSuccess] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const [selectedFiles, setSelectedFiles] = useState<{
+    idDocument: File | null
+    proofOfAddress: File | null
+  }>({
+    idDocument: null,
+    proofOfAddress: null
+  })
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, docType: 'idDocument' | 'proofOfAddress') => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFiles(prev => ({ ...prev, [docType]: file }))
+    }
+  }
+
+  const handleSubmitKYC = async () => {
+    if (!selectedFiles.idDocument || !selectedFiles.proofOfAddress) {
+      setUploadError('Please upload both required documents')
+      return
+    }
+
+    setIsUploading(true)
+    setUploadError('')
+    setUploadSuccess(false)
+
+    try {
+      // In production, upload files to Supabase storage
+      // For now, just simulate success
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      setUploadSuccess(true)
+      setSelectedFiles({ idDocument: null, proofOfAddress: null })
+    } catch (err: any) {
+      setUploadError(err.message || 'Failed to upload documents')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const getKYCStatusIcon = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <CheckCircle className="h-5 w-5 text-green-600" />
+      case 'pending':
+        return <Clock className="h-5 w-5 text-yellow-600" />
+      case 'rejected':
+        return <XCircle className="h-5 w-5 text-red-600" />
+      case 'expired':
+        return <AlertTriangle className="h-5 w-5 text-orange-600" />
+      default:
+        return <Clock className="h-5 w-5 text-gray-600" />
+    }
+  }
+
+  const getKYCStatusMessage = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'Your KYC verification has been approved. You can now invest in properties.'
+      case 'pending':
+        return 'Your KYC documents are under review. This typically takes 1-3 business days.'
+      case 'rejected':
+        return 'Your KYC verification was rejected. Please resubmit your documents.'
+      case 'expired':
+        return 'Your KYC verification has expired. Please submit updated documents.'
+      default:
+        return 'Please submit your KYC documents to start investing.'
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">KYC Verification</h3>
+        <p className="text-sm text-gray-800 mb-6">
+          Complete your KYC verification to unlock full access to property investments
+        </p>
+
+        {/* Current KYC Status */}
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+          <div className="flex items-start gap-3">
+            {getKYCStatusIcon(profile?.kyc_status || 'pending')}
+            <div>
+              <h4 className="font-medium mb-1">
+                Status: {profile?.kyc_status?.charAt(0).toUpperCase() + profile?.kyc_status?.slice(1) || 'Pending'}
+              </h4>
+              <p className="text-sm text-gray-600">
+                {getKYCStatusMessage(profile?.kyc_status || 'pending')}
+              </p>
+              {profile?.kyc_submitted_at && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Submitted on: {new Date(profile.kyc_submitted_at).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Document Upload */}
+        {profile?.kyc_status !== 'approved' && (
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium mb-2 block">
+                Government-Issued ID Document
+                <span className="text-red-500">*</span>
+              </Label>
+              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => handleFileChange(e, 'idDocument')}
+                  className="hidden"
+                  id="id-document"
+                />
+                <label htmlFor="id-document" className="cursor-pointer">
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm font-medium">
+                    {selectedFiles.idDocument ? selectedFiles.idDocument.name : 'Click to upload or drag and drop'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Passport, Driver's License, or National ID (PDF, JPG, PNG - Max 5MB)
+                  </p>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium mb-2 block">
+                Proof of Address
+                <span className="text-red-500">*</span>
+              </Label>
+              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => handleFileChange(e, 'proofOfAddress')}
+                  className="hidden"
+                  id="proof-of-address"
+                />
+                <label htmlFor="proof-of-address" className="cursor-pointer">
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm font-medium">
+                    {selectedFiles.proofOfAddress ? selectedFiles.proofOfAddress.name : 'Click to upload or drag and drop'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Utility Bill, Bank Statement, or Tax Document (PDF, JPG, PNG - Max 5MB)
+                  </p>
+                </label>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <h4 className="font-medium text-blue-900 mb-2">Document Requirements</h4>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Documents must be clear and legible</li>
+                <li>• All four corners of the document must be visible</li>
+                <li>• Documents must be current (issued within last 3 months for proof of address)</li>
+                <li>• Personal information must match across all documents</li>
+              </ul>
+            </div>
+
+            {uploadSuccess && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2 text-green-800">
+                  <CheckCircle className="h-5 w-5" />
+                  <p className="font-medium">Documents submitted successfully! Your verification is under review.</p>
+                </div>
+              </div>
+            )}
+
+            {uploadError && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center gap-2 text-red-800">
+                  <AlertTriangle className="h-5 w-5" />
+                  <p className="font-medium">{uploadError}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button
+                onClick={handleSubmitKYC}
+                disabled={isUploading || !selectedFiles.idDocument || !selectedFiles.proofOfAddress}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Submit KYC Documents
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Approved Status */}
+        {profile?.kyc_status === 'approved' && (
+          <div className="p-6 bg-green-50 border border-green-200 rounded-lg text-center">
+            <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
+            <h4 className="font-semibold text-green-900 mb-2">Verification Complete</h4>
+            <p className="text-sm text-green-800">
+              You are fully verified and can now access all investment opportunities on our platform.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
