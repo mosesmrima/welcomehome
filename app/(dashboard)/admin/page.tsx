@@ -5,6 +5,8 @@ import { Card } from "@/app/components/ui/card"
 import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
 import { Badge } from "@/app/components/ui/badge"
+import { TextArea } from "@/app/components/ui/textarea"
+import { Label } from "@/app/components/ui/label"
 import { useAccount } from "wagmi"
 import { formatUnits, parseUnits, Address } from "viem"
 import {
@@ -20,13 +22,17 @@ import {
   UserX,
   AlertTriangle,
   CheckCircle,
-  Coins
+  Coins,
+  Building2,
+  Plus
 } from "lucide-react"
 
 import { useUserRoles } from "@/app/lib/web3/hooks/use-roles"
 import { usePropertyStatus, usePauseContract, useSetMaxTokens, useConnectProperty } from "@/app/lib/web3/hooks/use-property-token"
 import { useAccreditedStatus } from "@/app/lib/web3/hooks/use-token-handler"
 import { useMounted } from "@/app/lib/hooks/use-mounted"
+import { usePropertyFactory, PropertyType } from "@/app/lib/web3/hooks/use-property-factory"
+import { CONTRACT_ADDRESSES } from "@/app/lib/web3/config"
 
 // Disable static rendering for this page
 export const dynamic = 'force-dynamic'
@@ -111,6 +117,9 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+
+      {/* Property Creation - Full Width */}
+      <PropertyCreation />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Contract Management */}
@@ -410,6 +419,189 @@ function RevenueManagement() {
           </div>
         </div>
       </div>
+    </Card>
+  )
+}
+
+function PropertyCreation() {
+  const [formData, setFormData] = useState({
+    name: '',
+    symbol: '',
+    location: '',
+    totalValue: '',
+    maxTokens: '',
+    propertyType: '0', // RESIDENTIAL
+  })
+  const [isCreating, setIsCreating] = useState(false)
+  const [createSuccess, setCreateSuccess] = useState(false)
+  const [createError, setCreateError] = useState('')
+
+  const { deployProperty } = usePropertyFactory()
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleCreateProperty = async () => {
+    if (!formData.name || !formData.symbol || !formData.location || !formData.totalValue || !formData.maxTokens) {
+      setCreateError('Please fill in all fields')
+      return
+    }
+
+    setIsCreating(true)
+    setCreateError('')
+    setCreateSuccess(false)
+
+    try {
+      const propertyType = parseInt(formData.propertyType) as PropertyType
+      const paymentToken = CONTRACT_ADDRESSES.PAYMENT_TOKEN as Address
+
+      await deployProperty(
+        formData.name,
+        formData.symbol,
+        '', // ipfsHash - empty for now, could be added later
+        formData.totalValue,
+        formData.maxTokens,
+        propertyType,
+        formData.location,
+        paymentToken,
+        '1' // creation fee in HBAR
+      )
+
+      setCreateSuccess(true)
+      // Reset form
+      setFormData({
+        name: '',
+        symbol: '',
+        location: '',
+        totalValue: '',
+        maxTokens: '',
+        propertyType: '0',
+      })
+    } catch (err: any) {
+      setCreateError(err.message || 'Failed to create property')
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="bg-indigo-100 p-2 rounded-lg">
+          <Building2 className="h-5 w-5 text-indigo-600" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold">Create New Property</h3>
+          <p className="text-sm text-gray-600">Add a new property to the marketplace</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Property Name</Label>
+          <Input
+            id="name"
+            name="name"
+            placeholder="e.g., Luxury Villa in Karen"
+            value={formData.name}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="symbol">Token Symbol</Label>
+          <Input
+            id="symbol"
+            name="symbol"
+            placeholder="e.g., VILLA"
+            value={formData.symbol}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="location">Location</Label>
+          <Input
+            id="location"
+            name="location"
+            placeholder="e.g., Karen, Nairobi"
+            value={formData.location}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="propertyType">Property Type</Label>
+          <select
+            id="propertyType"
+            name="propertyType"
+            value={formData.propertyType}
+            onChange={handleInputChange}
+            className="w-full border rounded-md px-3 py-2 text-sm"
+          >
+            <option value="0">Residential</option>
+            <option value="1">Commercial</option>
+            <option value="2">Industrial</option>
+            <option value="3">Mixed Use</option>
+            <option value="4">Land</option>
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="totalValue">Total Property Value (USD)</Label>
+          <Input
+            id="totalValue"
+            name="totalValue"
+            type="number"
+            placeholder="e.g., 1000000"
+            value={formData.totalValue}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="maxTokens">Maximum Tokens</Label>
+          <Input
+            id="maxTokens"
+            name="maxTokens"
+            type="number"
+            placeholder="e.g., 10000"
+            value={formData.maxTokens}
+            onChange={handleInputChange}
+          />
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <Button
+          onClick={handleCreateProperty}
+          disabled={isCreating}
+          className="w-full md:w-auto"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          {isCreating ? 'Creating Property...' : 'Create Property'}
+        </Button>
+      </div>
+
+      {createSuccess && (
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2 text-green-800">
+            <CheckCircle className="h-5 w-5" />
+            <p className="font-medium">Property created successfully!</p>
+          </div>
+        </div>
+      )}
+
+      {createError && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center gap-2 text-red-800">
+            <AlertTriangle className="h-5 w-5" />
+            <p className="font-medium">{createError}</p>
+          </div>
+        </div>
+      )}
     </Card>
   )
 }
