@@ -5,13 +5,17 @@ import { useAccount, useConnect, useDisconnect, useEnsName, useSwitchChain } fro
 import { Button } from '@/app/components/ui/button'
 import { Card } from '@/app/components/ui/card'
 import { Badge } from '@/app/components/ui/badge'
-import { Wallet, Copy, ExternalLink, ChevronDown, Check, AlertTriangle } from 'lucide-react'
+import { Copy, ExternalLink, Check, AlertTriangle, Wallet } from 'lucide-react'
 import { useUserRoles } from '@/app/lib/web3/hooks/use-roles'
 import { useTokenBalance } from '@/app/lib/web3/hooks/use-property-token'
 import { addNetworkToWallet, getNetworkName, isHederaNetwork } from '@/app/lib/web3/utils'
 import { hederaTestnet } from '@/app/lib/web3/config'
 
-export function WalletConnect() {
+interface WalletConnectProps {
+  compact?: boolean
+}
+
+export function WalletConnect({ compact = false }: WalletConnectProps) {
   const { address, isConnected, chain } = useAccount()
   const { data: ensName } = useEnsName({ address })
   const { connect, connectors, isPending } = useConnect()
@@ -66,6 +70,38 @@ export function WalletConnect() {
     setNetworkError(null)
   }
 
+  // Compact variant for navbar
+  if (compact && isConnected && address) {
+    return (
+      <Button
+        variant="outline"
+        size="default"
+        onClick={() => disconnect()}
+        className="px-4 py-2 h-10 border-gray-300"
+      >
+        <span className="font-medium">{formatAddress(address)}</span>
+      </Button>
+    )
+  }
+
+  if (compact && !isConnected) {
+    return (
+      <Button
+        onClick={() => {
+          if (connectors[0]) {
+            connect({ connector: connectors[0] })
+          }
+        }}
+        disabled={isPending}
+        size="default"
+        className="px-6 py-2 h-10 bg-teal-600 hover:bg-teal-700 text-white"
+      >
+        <span className="font-medium">Connect Wallet</span>
+      </Button>
+    )
+  }
+
+  // Full card variant for modals/dialogs
   if (isConnected && address) {
     return (
       <Card className="p-4 bg-white border border-gray-200">
@@ -237,7 +273,6 @@ export function WalletConnect() {
           disabled={isPending}
         >
           Connect Wallet
-          <ChevronDown className="ml-2 h-4 w-4" />
         </Button>
       ) : (
         <div className="space-y-3">

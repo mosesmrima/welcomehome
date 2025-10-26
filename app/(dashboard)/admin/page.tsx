@@ -5,7 +5,7 @@ import { Card } from "@/app/components/ui/card"
 import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
 import { Badge } from "@/app/components/ui/badge"
-import { TextArea } from "@/app/components/ui/textarea"
+import { Textarea } from "@/app/components/ui/textarea"
 import { Label } from "@/app/components/ui/label"
 import { useAccount } from "wagmi"
 import { formatUnits, parseUnits, Address } from "viem"
@@ -29,10 +29,15 @@ import {
 
 import { useUserRoles } from "@/app/lib/web3/hooks/use-roles"
 import { usePropertyStatus, usePauseContract, useSetMaxTokens, useConnectProperty } from "@/app/lib/web3/hooks/use-property-token"
-import { useAccreditedStatus } from "@/app/lib/web3/hooks/use-token-handler"
 import { useMounted } from "@/app/lib/hooks/use-mounted"
-import { usePropertyFactory, PropertyType } from "@/app/lib/web3/hooks/use-property-factory"
+import { usePropertyFactory } from "@/app/lib/web3/hooks/use-property-factory"
 import { CONTRACT_ADDRESSES } from "@/app/lib/web3/config"
+import { useReadContract } from "wagmi"
+import { ACCESS_CONTROL_ABI } from "@/app/lib/web3/abi"
+import { ImageUploader } from "@/app/components/admin/image-uploader"
+import { AmenitiesSelector } from "@/app/components/admin/amenities-selector"
+import { usePropertyManagement } from "@/app/lib/supabase/hooks/use-property-management"
+import { PropertyType, SizeUnit, PropertyStatus, PropertyMetadata } from "@/app/lib/supabase/types"
 
 // Disable static rendering for this page
 export const dynamic = 'force-dynamic'
@@ -120,6 +125,12 @@ export default function AdminPage() {
 
       {/* Property Creation - Full Width */}
       <PropertyCreation />
+
+      {/* Properties List - Full Width */}
+      <PropertiesList />
+
+      {/* Token Distribution - Full Width */}
+      <TokenDistribution />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Contract Management */}
@@ -209,7 +220,16 @@ function UserManagement() {
   const [userAddress, setUserAddress] = useState('')
   const [checkAddress, setCheckAddress] = useState<Address>()
 
-  const { isAccredited } = useAccreditedStatus(checkAddress)
+  // Check KYC status from AccessControl contract
+  const { data: isKYCVerified } = useReadContract({
+    address: CONTRACT_ADDRESSES.ACCESS_CONTROL as Address,
+    abi: ACCESS_CONTROL_ABI,
+    functionName: 'isUserKYCed',
+    args: checkAddress ? [checkAddress] : undefined,
+    query: {
+      enabled: !!checkAddress,
+    },
+  })
 
   const handleCheckUser = () => {
     if (userAddress && userAddress.startsWith('0x') && userAddress.length === 42) {
@@ -245,17 +265,17 @@ function UserManagement() {
           {checkAddress && (
             <div className="mt-3 p-3 bg-gray-50 rounded-lg">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Accredited Status:</span>
-                <Badge variant={isAccredited ? "default" : "secondary"}>
-                  {isAccredited ? (
+                <span className="text-sm font-medium">KYC Status:</span>
+                <Badge variant={isKYCVerified ? "default" : "secondary"}>
+                  {isKYCVerified ? (
                     <>
                       <UserCheck className="h-3 w-3 mr-1" />
-                      Accredited
+                      KYC Verified
                     </>
                   ) : (
                     <>
                       <UserX className="h-3 w-3 mr-1" />
-                      Not Accredited
+                      Not Verified
                     </>
                   )}
                 </Badge>
@@ -423,182 +443,823 @@ function RevenueManagement() {
   )
 }
 
-function PropertyCreation() {
-  const [formData, setFormData] = useState({
-    name: '',
-    symbol: '',
-    location: '',
-    totalValue: '',
-    maxTokens: '',
-    propertyType: '0', // RESIDENTIAL
-  })
-  const [isCreating, setIsCreating] = useState(false)
-  const [createSuccess, setCreateSuccess] = useState(false)
-  const [createError, setCreateError] = useState('')
+function PropertiesList() {
+  const { properties, isLoading, propertyCount, refetchPropertyCount } = usePropertyFactory()
 
-  const { deployProperty } = usePropertyFactory()
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+  if (isLoading) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Created Properties</h3>
+          <Badge>Loading...</Badge>
+        </div>
+        <div className="space-y-2">
+          <div className="h-16 bg-gray-100 rounded animate-pulse" />
+          <div className="h-16 bg-gray-100 rounded animate-pulse" />
+        </div>
+      </Card>
+    )
   }
 
-  const handleCreateProperty = async () => {
-    if (!formData.name || !formData.symbol || !formData.location || !formData.totalValue || !formData.maxTokens) {
-      setCreateError('Please fill in all fields')
+  if (properties.length === 0) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Created Properties</h3>
+          <Badge variant="secondary">0 Properties</Badge>
+        </div>
+        <div className="text-center py-8 text-gray-500">
+          <Building2 className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+          <p>No properties created yet</p>
+          <p className="text-sm">Create your first property above</p>
+        </div>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-semibold">Created Properties</h3>
+          <p className="text-sm text-gray-600">{propertyCount} {propertyCount === 1 ? 'property' : 'properties'} total</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refetchPropertyCount()}>
+          <CheckCircle className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+
+      <div className="space-y-3">
+        {properties.map((property) => (
+          <div key={property.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building2 className="h-4 w-4 text-gray-600" />
+                  <h4 className="font-medium">{property.name}</h4>
+                  <Badge variant={property.isActive ? "default" : "secondary"} className="text-xs">
+                    {property.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">ID:</span>
+                    <span className="ml-1 font-medium">#{property.id}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Total Supply:</span>
+                    <span className="ml-1 font-medium">{formatUnits(property.totalSupply, 18)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Price:</span>
+                    <span className="ml-1 font-medium">{formatUnits(property.pricePerToken, 18)} HBAR</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Created:</span>
+                    <span className="ml-1 font-medium">
+                      {new Date(Number(property.createdAt) * 1000).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-gray-500">
+                  <span>Token Contract: </span>
+                  <span className="font-mono">{property.tokenContract.slice(0, 10)}...{property.tokenContract.slice(-8)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
+function TokenDistribution() {
+  const { properties, isLoading, distributeTokens, isDistributing, isConfirmingDistribute, isDistributeSuccess, distributeError, distributeHash } = usePropertyFactory()
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>('')
+  const [recipientAddress, setRecipientAddress] = useState('')
+  const [tokenAmount, setTokenAmount] = useState('')
+
+  const selectedProperty = properties.find(p => p.id.toString() === selectedPropertyId)
+
+  const handleDistribute = async () => {
+    if (!selectedPropertyId || !recipientAddress || !tokenAmount) {
+      alert('Please fill in all fields')
       return
     }
 
-    setIsCreating(true)
-    setCreateError('')
-    setCreateSuccess(false)
+    if (!recipientAddress.startsWith('0x') || recipientAddress.length !== 42) {
+      alert('Invalid recipient address')
+      return
+    }
 
     try {
-      const propertyType = parseInt(formData.propertyType) as PropertyType
-      const paymentToken = CONTRACT_ADDRESSES.PAYMENT_TOKEN as Address
-
-      await deployProperty(
-        formData.name,
-        formData.symbol,
-        '', // ipfsHash - empty for now, could be added later
-        formData.totalValue,
-        formData.maxTokens,
-        propertyType,
-        formData.location,
-        paymentToken,
-        '1' // creation fee in HBAR
-      )
-
-      setCreateSuccess(true)
-      // Reset form
-      setFormData({
-        name: '',
-        symbol: '',
-        location: '',
-        totalValue: '',
-        maxTokens: '',
-        propertyType: '0',
+      await distributeTokens({
+        propertyId: parseInt(selectedPropertyId),
+        to: recipientAddress as `0x${string}`,
+        amount: tokenAmount,
       })
     } catch (err: any) {
-      setCreateError(err.message || 'Failed to create property')
-    } finally {
-      setIsCreating(false)
+      console.error('Distribution error:', err)
     }
   }
 
   return (
     <Card className="p-6">
       <div className="flex items-center gap-3 mb-4">
+        <div className="bg-green-100 p-2 rounded-lg">
+          <Coins className="h-5 w-5 text-green-600" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold">Distribute Tokens</h3>
+          <p className="text-sm text-gray-600">Distribute property tokens to KYC-verified investors</p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="text-center py-8 text-gray-500">
+          <div className="animate-pulse">Loading properties...</div>
+        </div>
+      ) : properties.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          <Building2 className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+          <p>No properties available</p>
+          <p className="text-sm">Create a property first to distribute tokens</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="space-y-2">
+              <Label htmlFor="property">Select Property *</Label>
+              <select
+                id="property"
+                value={selectedPropertyId}
+                onChange={(e) => setSelectedPropertyId(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md bg-white"
+                disabled={isDistributing || isConfirmingDistribute}
+              >
+                <option value="">Choose a property...</option>
+                {properties.map((property) => (
+                  <option key={property.id} value={property.id}>
+                    #{property.id} - {property.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="recipient">Recipient Address *</Label>
+              <Input
+                id="recipient"
+                placeholder="0x..."
+                value={recipientAddress}
+                onChange={(e) => setRecipientAddress(e.target.value)}
+                disabled={isDistributing || isConfirmingDistribute}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="amount">Token Amount *</Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="e.g., 100"
+                value={tokenAmount}
+                onChange={(e) => setTokenAmount(e.target.value)}
+                disabled={isDistributing || isConfirmingDistribute}
+              />
+            </div>
+          </div>
+
+          {selectedProperty && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-600">Total Supply:</span>
+                  <span className="ml-1 font-medium">{formatUnits(selectedProperty.totalSupply, 18)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Price per Token:</span>
+                  <span className="ml-1 font-medium">{formatUnits(selectedProperty.pricePerToken, 18)} HBAR</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Status:</span>
+                  <Badge variant={selectedProperty.isActive ? "default" : "secondary"} className="ml-1 text-xs">
+                    {selectedProperty.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+                <div>
+                  <span className="text-gray-600">Token Contract:</span>
+                  <span className="ml-1 font-mono text-xs">{selectedProperty.tokenContract.slice(0, 6)}...{selectedProperty.tokenContract.slice(-4)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isDistributeSuccess && distributeHash && (
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center gap-2 text-green-800">
+                <CheckCircle className="h-5 w-5" />
+                <div>
+                  <p className="font-medium">Distribution Successful!</p>
+                  <p className="text-sm">
+                    Distributed {tokenAmount} tokens to {recipientAddress.slice(0, 6)}...{recipientAddress.slice(-4)}
+                  </p>
+                  <p className="text-xs mt-1 font-mono">
+                    Tx: {distributeHash.slice(0, 10)}...{distributeHash.slice(-8)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {distributeError && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-2 text-red-800">
+                <AlertTriangle className="h-5 w-5" />
+                <div>
+                  <p className="font-medium">Distribution Failed</p>
+                  <p className="text-sm">{distributeError.message || 'Unknown error occurred'}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <Button
+            onClick={handleDistribute}
+            disabled={!selectedPropertyId || !recipientAddress || !tokenAmount || isDistributing || isConfirmingDistribute}
+            className="w-full"
+          >
+            {isDistributing || isConfirmingDistribute ? (
+              <>
+                <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                {isConfirmingDistribute ? 'Confirming...' : 'Distributing...'}
+              </>
+            ) : (
+              <>
+                <Coins className="h-4 w-4 mr-2" />
+                Distribute Tokens
+              </>
+            )}
+          </Button>
+
+          <div className="mt-3 text-xs text-gray-500 space-y-1">
+            <p>• Recipient must be KYC-verified to receive tokens</p>
+            <p>• Tokens are distributed from the PropertyFactory contract</p>
+            <p>• Transaction may take a few seconds to confirm on Hedera</p>
+          </div>
+        </>
+      )}
+    </Card>
+  )
+}
+
+function PropertyCreation() {
+  // Basic property info
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    maxSupply: '',
+    pricePerToken: '',
+    propertyType: 'residential' as PropertyType,
+    sizeValue: '',
+    sizeUnit: 'sqm' as SizeUnit,
+    status: 'available' as PropertyStatus,
+  })
+
+  // Property details (conditional)
+  const [propertyDetails, setPropertyDetails] = useState({
+    bedrooms: '',
+    bathrooms: '',
+    yearBuilt: '',
+    floors: '',
+    parking: '',
+  })
+
+  // Location
+  const [location, setLocation] = useState({
+    address: '',
+    city: '',
+    country: '',
+    lat: '',
+    lng: '',
+  })
+
+  // Financials
+  const [financials, setFinancials] = useState({
+    expectedROI: '',
+    rentalYield: '',
+    appreciationRate: '',
+  })
+
+  const [images, setImages] = useState<string[]>([])
+  const [amenities, setAmenities] = useState<string[]>([])
+
+  const {
+    createProperty: createBlockchainProperty,
+    isCreatingProperty,
+    isConfirmingCreate,
+    isCreateSuccess,
+    createPropertyError,
+    createPropertyHash,
+  } = usePropertyFactory()
+
+  const { createProperty: createSupabaseProperty } = usePropertyManagement()
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setPropertyDetails(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setLocation(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleFinancialsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFinancials(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleCreateProperty = async () => {
+    // Validation
+    if (!formData.name || !formData.maxSupply || !formData.pricePerToken) {
+      alert('Please fill in all required fields (Name, Max Supply, Price Per Token)')
+      return
+    }
+
+    try {
+      // Step 1: Create property on blockchain
+      const metadataURI = JSON.stringify({
+        name: formData.name,
+        description: formData.description || '',
+        type: formData.propertyType,
+        createdAt: Date.now(),
+      })
+
+      const result = await createBlockchainProperty({
+        name: formData.name,
+        symbol: '',
+        maxSupply: formData.maxSupply,
+        pricePerToken: formData.pricePerToken,
+        location: '',
+        ipfsURI: metadataURI,
+      })
+
+      // Step 2: Wait for blockchain confirmation and get contract address
+      // The contract address will be available in the transaction receipt
+      // For now, we'll use a placeholder and update this in the next phase
+      // TODO: Extract contract address from transaction result
+
+      // Clear form on success
+      setFormData({
+        name: '',
+        description: '',
+        maxSupply: '',
+        pricePerToken: '',
+        propertyType: 'residential',
+        sizeValue: '',
+        sizeUnit: 'sqm',
+        status: 'available',
+      })
+      setPropertyDetails({
+        bedrooms: '',
+        bathrooms: '',
+        yearBuilt: '',
+        floors: '',
+        parking: '',
+      })
+      setLocation({
+        address: '',
+        city: '',
+        country: '',
+        lat: '',
+        lng: '',
+      })
+      setFinancials({
+        expectedROI: '',
+        rentalYield: '',
+        appreciationRate: '',
+      })
+      setImages([])
+      setAmenities([])
+
+    } catch (err: any) {
+      console.error('Create property error:', err)
+    }
+  }
+
+  const showPropertyDetails = formData.propertyType === 'residential' || formData.propertyType === 'commercial'
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-center gap-3 mb-6">
         <div className="bg-indigo-100 p-2 rounded-lg">
           <Building2 className="h-5 w-5 text-indigo-600" />
         </div>
         <div>
           <h3 className="text-lg font-semibold">Create New Property</h3>
-          <p className="text-sm text-gray-600">Add a new property to the marketplace</p>
+          <p className="text-sm text-gray-600">Add a new tokenized property to the marketplace</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Property Name</Label>
-          <Input
-            id="name"
-            name="name"
-            placeholder="e.g., Luxury Villa in Karen"
-            value={formData.name}
-            onChange={handleInputChange}
+      <div className="space-y-6">
+        {/* Basic Information */}
+        <div className="border-b pb-4">
+          <h4 className="font-semibold mb-4">Basic Information</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="name">Property Name *</Label>
+              <Input
+                id="name"
+                name="name"
+                placeholder="e.g., Luxury Villa in Karen"
+                value={formData.name}
+                onChange={handleInputChange}
+                disabled={isCreatingProperty || isConfirmingCreate}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="propertyType">Property Type *</Label>
+              <select
+                id="propertyType"
+                name="propertyType"
+                value={formData.propertyType}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-md bg-white"
+                disabled={isCreatingProperty || isConfirmingCreate}
+              >
+                <option value="residential">Residential</option>
+                <option value="commercial">Commercial</option>
+                <option value="land">Land</option>
+                <option value="industrial">Industrial</option>
+                <option value="mixed_use">Mixed Use</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status *</Label>
+              <select
+                id="status"
+                name="status"
+                value={formData.status}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-md bg-white"
+                disabled={isCreatingProperty || isConfirmingCreate}
+              >
+                <option value="available">Available</option>
+                <option value="coming_soon">Coming Soon</option>
+                <option value="sold_out">Sold Out</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sizeValue">Property Size *</Label>
+              <Input
+                id="sizeValue"
+                name="sizeValue"
+                type="number"
+                step="0.01"
+                placeholder="e.g., 10"
+                value={formData.sizeValue}
+                onChange={handleInputChange}
+                disabled={isCreatingProperty || isConfirmingCreate}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sizeUnit">Size Unit *</Label>
+              <select
+                id="sizeUnit"
+                name="sizeUnit"
+                value={formData.sizeUnit}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-md bg-white"
+                disabled={isCreatingProperty || isConfirmingCreate}
+              >
+                <option value="acres">Acres</option>
+                <option value="sqm">Square Meters (sqm)</option>
+                <option value="sqft">Square Feet (sqft)</option>
+              </select>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                name="description"
+                placeholder="Property description..."
+                value={formData.description}
+                onChange={handleInputChange}
+                disabled={isCreatingProperty || isConfirmingCreate}
+                rows={3}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Property Details (Conditional) */}
+        {showPropertyDetails && (
+          <div className="border-b pb-4">
+            <h4 className="font-semibold mb-4">Property Details</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="bedrooms">Bedrooms</Label>
+                <Input
+                  id="bedrooms"
+                  name="bedrooms"
+                  type="number"
+                  placeholder="e.g., 3"
+                  value={propertyDetails.bedrooms}
+                  onChange={handleDetailsChange}
+                  disabled={isCreatingProperty || isConfirmingCreate}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bathrooms">Bathrooms</Label>
+                <Input
+                  id="bathrooms"
+                  name="bathrooms"
+                  type="number"
+                  placeholder="e.g., 2"
+                  value={propertyDetails.bathrooms}
+                  onChange={handleDetailsChange}
+                  disabled={isCreatingProperty || isConfirmingCreate}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="yearBuilt">Year Built</Label>
+                <Input
+                  id="yearBuilt"
+                  name="yearBuilt"
+                  type="number"
+                  placeholder="e.g., 2020"
+                  value={propertyDetails.yearBuilt}
+                  onChange={handleDetailsChange}
+                  disabled={isCreatingProperty || isConfirmingCreate}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="floors">Floors</Label>
+                <Input
+                  id="floors"
+                  name="floors"
+                  type="number"
+                  placeholder="e.g., 2"
+                  value={propertyDetails.floors}
+                  onChange={handleDetailsChange}
+                  disabled={isCreatingProperty || isConfirmingCreate}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="parking">Parking Spaces</Label>
+                <Input
+                  id="parking"
+                  name="parking"
+                  type="number"
+                  placeholder="e.g., 2"
+                  value={propertyDetails.parking}
+                  onChange={handleDetailsChange}
+                  disabled={isCreatingProperty || isConfirmingCreate}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Location */}
+        <div className="border-b pb-4">
+          <h4 className="font-semibold mb-4">Location</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="address">Address</Label>
+              <Input
+                id="address"
+                name="address"
+                placeholder="Street address"
+                value={location.address}
+                onChange={handleLocationChange}
+                disabled={isCreatingProperty || isConfirmingCreate}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                name="city"
+                placeholder="e.g., Nairobi"
+                value={location.city}
+                onChange={handleLocationChange}
+                disabled={isCreatingProperty || isConfirmingCreate}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="country">Country</Label>
+              <Input
+                id="country"
+                name="country"
+                placeholder="e.g., Kenya"
+                value={location.country}
+                onChange={handleLocationChange}
+                disabled={isCreatingProperty || isConfirmingCreate}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lat">Latitude (optional)</Label>
+              <Input
+                id="lat"
+                name="lat"
+                type="number"
+                step="0.000001"
+                placeholder="e.g., -1.286389"
+                value={location.lat}
+                onChange={handleLocationChange}
+                disabled={isCreatingProperty || isConfirmingCreate}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lng">Longitude (optional)</Label>
+              <Input
+                id="lng"
+                name="lng"
+                type="number"
+                step="0.000001"
+                placeholder="e.g., 36.817223"
+                value={location.lng}
+                onChange={handleLocationChange}
+                disabled={isCreatingProperty || isConfirmingCreate}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Tokenization Details */}
+        <div className="border-b pb-4">
+          <h4 className="font-semibold mb-4">Tokenization Details</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="maxSupply">Max Token Supply *</Label>
+              <Input
+                id="maxSupply"
+                name="maxSupply"
+                type="number"
+                placeholder="e.g., 1000"
+                value={formData.maxSupply}
+                onChange={handleInputChange}
+                disabled={isCreatingProperty || isConfirmingCreate}
+              />
+              <p className="text-xs text-gray-500">Total tokens representing 100% ownership</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pricePerToken">Price Per Token (HBAR) *</Label>
+              <Input
+                id="pricePerToken"
+                name="pricePerToken"
+                type="number"
+                step="0.01"
+                placeholder="e.g., 100"
+                value={formData.pricePerToken}
+                onChange={handleInputChange}
+                disabled={isCreatingProperty || isConfirmingCreate}
+              />
+              <p className="text-xs text-gray-500">Price per token in HBAR</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Financial Projections */}
+        <div className="border-b pb-4">
+          <h4 className="font-semibold mb-4">Financial Projections (Optional)</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="expectedROI">Expected ROI (%)</Label>
+              <Input
+                id="expectedROI"
+                name="expectedROI"
+                type="number"
+                step="0.1"
+                placeholder="e.g., 8.5"
+                value={financials.expectedROI}
+                onChange={handleFinancialsChange}
+                disabled={isCreatingProperty || isConfirmingCreate}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rentalYield">Rental Yield (%)</Label>
+              <Input
+                id="rentalYield"
+                name="rentalYield"
+                type="number"
+                step="0.1"
+                placeholder="e.g., 5.2"
+                value={financials.rentalYield}
+                onChange={handleFinancialsChange}
+                disabled={isCreatingProperty || isConfirmingCreate}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="appreciationRate">Appreciation Rate (%)</Label>
+              <Input
+                id="appreciationRate"
+                name="appreciationRate"
+                type="number"
+                step="0.1"
+                placeholder="e.g., 3.0"
+                value={financials.appreciationRate}
+                onChange={handleFinancialsChange}
+                disabled={isCreatingProperty || isConfirmingCreate}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Amenities */}
+        <div className="border-b pb-4">
+          <h4 className="font-semibold mb-4">Amenities</h4>
+          <AmenitiesSelector
+            selectedAmenities={amenities}
+            onChange={setAmenities}
+            disabled={isCreatingProperty || isConfirmingCreate}
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="symbol">Token Symbol</Label>
-          <Input
-            id="symbol"
-            name="symbol"
-            placeholder="e.g., VILLA"
-            value={formData.symbol}
-            onChange={handleInputChange}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="location">Location</Label>
-          <Input
-            id="location"
-            name="location"
-            placeholder="e.g., Karen, Nairobi"
-            value={formData.location}
-            onChange={handleInputChange}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="propertyType">Property Type</Label>
-          <select
-            id="propertyType"
-            name="propertyType"
-            value={formData.propertyType}
-            onChange={handleInputChange}
-            className="w-full border rounded-md px-3 py-2 text-sm"
-          >
-            <option value="0">Residential</option>
-            <option value="1">Commercial</option>
-            <option value="2">Industrial</option>
-            <option value="3">Mixed Use</option>
-            <option value="4">Land</option>
-          </select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="totalValue">Total Property Value (USD)</Label>
-          <Input
-            id="totalValue"
-            name="totalValue"
-            type="number"
-            placeholder="e.g., 1000000"
-            value={formData.totalValue}
-            onChange={handleInputChange}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="maxTokens">Maximum Tokens</Label>
-          <Input
-            id="maxTokens"
-            name="maxTokens"
-            type="number"
-            placeholder="e.g., 10000"
-            value={formData.maxTokens}
-            onChange={handleInputChange}
+        {/* Images */}
+        <div className="border-b pb-4">
+          <h4 className="font-semibold mb-4">Property Images</h4>
+          <ImageUploader
+            maxFiles={10}
+            onImagesChange={setImages}
+            initialImages={images}
+            disabled={isCreatingProperty || isConfirmingCreate}
           />
         </div>
       </div>
 
+      {/* Submit Button */}
       <div className="mt-6">
         <Button
           onClick={handleCreateProperty}
-          disabled={isCreating}
+          disabled={isCreatingProperty || isConfirmingCreate}
           className="w-full md:w-auto"
         >
           <Plus className="h-4 w-4 mr-2" />
-          {isCreating ? 'Creating Property...' : 'Create Property'}
+          {isCreatingProperty ? 'Signing Transaction...' : isConfirmingCreate ? 'Confirming...' : 'Create Property'}
         </Button>
       </div>
 
-      {createSuccess && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-center gap-2 text-green-800">
-            <CheckCircle className="h-5 w-5" />
-            <p className="font-medium">Property created successfully!</p>
+      {/* Status Messages */}
+      {isConfirmingCreate && !isCreateSuccess && (
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2 text-blue-800">
+            <div className="h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <div>
+              <p className="font-medium">Transaction confirming...</p>
+              <p className="text-sm mt-1">Waiting for Hedera network confirmation</p>
+            </div>
           </div>
         </div>
       )}
 
-      {createError && (
+      {isCreateSuccess && (
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2 text-green-800">
+            <CheckCircle className="h-5 w-5" />
+            <div>
+              <p className="font-medium">Property created successfully!</p>
+              <p className="text-sm mt-1">Property list will update in a moment...</p>
+              {createPropertyHash && (
+                <p className="text-xs mt-1 font-mono">
+                  Tx: {createPropertyHash.slice(0, 10)}...{createPropertyHash.slice(-8)}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {createPropertyError && (
         <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-center gap-2 text-red-800">
             <AlertTriangle className="h-5 w-5" />
-            <p className="font-medium">{createError}</p>
+            <p className="font-medium">{createPropertyError.message || 'Failed to create property'}</p>
           </div>
         </div>
       )}

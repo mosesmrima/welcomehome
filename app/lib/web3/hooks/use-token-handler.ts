@@ -1,14 +1,14 @@
 "use client"
 
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { PROPERTY_TOKEN_HANDLER_ABI } from '../abi'
+import { MARKETPLACE_ABI } from '../abi'
 import { Address } from 'viem'
 
 // Token Sale Hooks - Updated for new modular architecture
 export function useTokenSale(handlerAddress?: Address) {
   const { data: saleData, refetch } = useReadContract({
     address: handlerAddress,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    abi: MARKETPLACE_ABI,
     functionName: 'currentSale',
     query: {
       enabled: !!handlerAddress,
@@ -41,7 +41,7 @@ export function usePurchaseTokens(handlerAddress?: Address) {
     }
     writeContract({
       address: handlerAddress,
-      abi: PROPERTY_TOKEN_HANDLER_ABI,
+      abi: MARKETPLACE_ABI,
       functionName: 'purchaseTokens',
       args: [tokenAmount],
     })
@@ -61,7 +61,7 @@ export function usePurchaseTokens(handlerAddress?: Address) {
 export function useMarketplaceListing(handlerAddress: Address | undefined, listingId: number) {
   const { data: listingData } = useReadContract({
     address: handlerAddress,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    abi: MARKETPLACE_ABI,
     functionName: 'marketplaceListings',
     args: [BigInt(listingId)],
     query: {
@@ -83,7 +83,7 @@ export function useMarketplaceListing(handlerAddress: Address | undefined, listi
 export function useNextListingId(handlerAddress?: Address) {
   const { data: nextId } = useReadContract({
     address: handlerAddress,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    abi: MARKETPLACE_ABI,
     functionName: 'nextListingId',
     query: {
       enabled: !!handlerAddress,
@@ -106,7 +106,7 @@ export function useListTokens(handlerAddress?: Address) {
     }
     writeContract({
       address: handlerAddress,
-      abi: PROPERTY_TOKEN_HANDLER_ABI,
+      abi: MARKETPLACE_ABI,
       functionName: 'listTokensForSale',
       args: [amount, pricePerToken],
     })
@@ -135,7 +135,7 @@ export function usePurchaseFromMarketplace(handlerAddress?: Address) {
     }
     writeContract({
       address: handlerAddress,
-      abi: PROPERTY_TOKEN_HANDLER_ABI,
+      abi: MARKETPLACE_ABI,
       functionName: 'purchaseFromMarketplace',
       args: [listingId, amount],
     })
@@ -155,7 +155,7 @@ export function usePurchaseFromMarketplace(handlerAddress?: Address) {
 export function useStakingInfo(handlerAddress: Address | undefined, address?: Address) {
   const { data: stakingData, refetch } = useReadContract({
     address: handlerAddress,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    abi: MARKETPLACE_ABI,
     functionName: 'stakingInfo',
     args: address ? [address] : undefined,
     query: {
@@ -177,7 +177,7 @@ export function useStakingInfo(handlerAddress: Address | undefined, address?: Ad
 export function useStakingRewards(handlerAddress: Address | undefined, address?: Address) {
   const { data: rewards } = useReadContract({
     address: handlerAddress,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    abi: MARKETPLACE_ABI,
     functionName: 'calculateStakingRewards',
     args: address ? [address] : undefined,
     query: {
@@ -201,7 +201,7 @@ export function useStakeTokens(handlerAddress?: Address) {
     }
     writeContract({
       address: handlerAddress,
-      abi: PROPERTY_TOKEN_HANDLER_ABI,
+      abi: MARKETPLACE_ABI,
       functionName: 'stakeTokens',
       args: [amount],
     })
@@ -230,7 +230,7 @@ export function useUnstakeTokens(handlerAddress?: Address) {
     }
     writeContract({
       address: handlerAddress,
-      abi: PROPERTY_TOKEN_HANDLER_ABI,
+      abi: MARKETPLACE_ABI,
       functionName: 'unstakeTokens',
       args: [amount],
     })
@@ -250,7 +250,7 @@ export function useUnstakeTokens(handlerAddress?: Address) {
 export function usePropertyRevenue(handlerAddress?: Address) {
   const { data: revenueData, refetch } = useReadContract({
     address: handlerAddress,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    abi: MARKETPLACE_ABI,
     functionName: 'propertyRevenue',
     query: {
       enabled: !!handlerAddress,
@@ -271,7 +271,7 @@ export function usePropertyRevenue(handlerAddress?: Address) {
 export function useClaimableRevenue(handlerAddress: Address | undefined, address?: Address) {
   const { data: claimableAmount, refetch } = useReadContract({
     address: handlerAddress,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    abi: MARKETPLACE_ABI,
     functionName: 'getClaimableRevenue',
     args: address ? [address] : undefined,
     query: {
@@ -295,7 +295,7 @@ export function useClaimRevenue(handlerAddress?: Address) {
     }
     writeContract({
       address: handlerAddress,
-      abi: PROPERTY_TOKEN_HANDLER_ABI,
+      abi: MARKETPLACE_ABI,
       functionName: 'claimRevenue',
     })
   }
@@ -314,7 +314,7 @@ export function useClaimRevenue(handlerAddress?: Address) {
 export function useAccreditedStatus(handlerAddress: Address | undefined, address?: Address) {
   const { data: isAccredited } = useReadContract({
     address: handlerAddress,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    abi: MARKETPLACE_ABI,
     functionName: 'accreditedInvestors',
     args: address ? [address] : undefined,
     query: {

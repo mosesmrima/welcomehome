@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { usePublicClient, useAccount } from 'wagmi'
 import { Address, formatUnits } from 'viem'
 import { usePropertyFactory, PropertyInfo } from './use-property-factory'
-import { PROPERTY_TOKEN_HANDLER_ABI, PROPERTY_TOKEN_ABI } from '../abi'
+import { MARKETPLACE_ABI, PROPERTY_TOKEN_ABI } from '../abi'
 import { supabase } from '../../supabase/client'
 import { logError } from '../error-utils'
 
@@ -75,7 +75,7 @@ export function useMultiPropertyData() {
           // Get current sale info from handler contract
           const saleInfo = await publicClient.readContract({
             address: property.handlerContract,
-            abi: PROPERTY_TOKEN_HANDLER_ABI,
+            abi: MARKETPLACE_ABI,
             functionName: 'currentSale',
           }) as [bigint, bigint, bigint, boolean, bigint, bigint]
 

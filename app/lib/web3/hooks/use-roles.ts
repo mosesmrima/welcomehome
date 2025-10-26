@@ -1,57 +1,39 @@
 "use client"
 
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { CONTRACT_ADDRESSES, CONTRACT_ROLES } from '../config'
-import { PROPERTY_TOKEN_ABI } from '../abi'
+import { CONTRACT_ADDRESSES } from '../config'
+import { ACCESS_CONTROL_ABI } from '../abi'
 import { Address } from 'viem'
 
 export function useUserRoles(address?: Address) {
-  const { data: hasMinterRole } = useReadContract({
-    address: CONTRACT_ADDRESSES.PROPERTY_TOKEN as Address,
-    abi: PROPERTY_TOKEN_ABI,
-    functionName: 'hasRole',
-    args: [CONTRACT_ROLES.MINTER_ROLE, address as Address],
-    query: {
-      enabled: !!address,
-    },
-  })
-
-  const { data: hasPauserRole } = useReadContract({
-    address: CONTRACT_ADDRESSES.PROPERTY_TOKEN as Address,
-    abi: PROPERTY_TOKEN_ABI,
-    functionName: 'hasRole',
-    args: [CONTRACT_ROLES.PAUSER_ROLE, address as Address],
+  // Query AccessControl contract for admin and property manager roles
+  const { data: hasAdminRole } = useReadContract({
+    address: CONTRACT_ADDRESSES.ACCESS_CONTROL as Address,
+    abi: ACCESS_CONTROL_ABI,
+    functionName: 'isUserAdmin',
+    args: [address as Address],
     query: {
       enabled: !!address,
     },
   })
 
   const { data: hasPropertyManagerRole } = useReadContract({
-    address: CONTRACT_ADDRESSES.PROPERTY_TOKEN as Address,
-    abi: PROPERTY_TOKEN_ABI,
-    functionName: 'hasRole',
-    args: [CONTRACT_ROLES.PROPERTY_MANAGER_ROLE, address as Address],
-    query: {
-      enabled: !!address,
-    },
-  })
-
-  const { data: hasAdminRole } = useReadContract({
-    address: CONTRACT_ADDRESSES.PROPERTY_TOKEN as Address,
-    abi: PROPERTY_TOKEN_ABI,
-    functionName: 'hasRole',
-    args: [CONTRACT_ROLES.DEFAULT_ADMIN_ROLE, address as Address],
+    address: CONTRACT_ADDRESSES.ACCESS_CONTROL as Address,
+    abi: ACCESS_CONTROL_ABI,
+    functionName: 'isUserPropertyManager',
+    args: [address as Address],
     query: {
       enabled: !!address,
     },
   })
 
   return {
-    hasMinterRole: !!hasMinterRole,
-    hasPauserRole: !!hasPauserRole,
-    hasPropertyManagerRole: !!hasPropertyManagerRole,
     hasAdminRole: !!hasAdminRole,
-    isManager: !!(hasMinterRole || hasPauserRole || hasPropertyManagerRole || hasAdminRole),
+    hasPropertyManagerRole: !!hasPropertyManagerRole,
+    // Legacy role fields (for backward compatibility)
+    hasMinterRole: false,
+    hasPauserRole: false,
+    isManager: !!(hasPropertyManagerRole || hasAdminRole),
   }
 }
 

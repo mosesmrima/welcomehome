@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { usePublicClient, useAccount } from 'wagmi'
 import { CONTRACT_ADDRESSES } from '../config'
-import { PROPERTY_TOKEN_HANDLER_ABI, PROPERTY_TOKEN_ABI } from '../abi'
+import { MARKETPLACE_ABI, PROPERTY_TOKEN_ABI } from '../abi'
 import { Address, formatUnits } from 'viem'
 import { Property } from '@/app/types/web3'
 
@@ -81,7 +81,7 @@ export function usePropertyData() {
       try {
         const saleInfo = await publicClient.readContract({
           address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
-          abi: PROPERTY_TOKEN_HANDLER_ABI,
+          abi: MARKETPLACE_ABI,
           functionName: 'currentSale',
         })
 

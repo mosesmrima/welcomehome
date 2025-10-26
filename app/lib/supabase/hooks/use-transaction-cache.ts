@@ -5,7 +5,7 @@ import { useWatchContractEvent, useAccount, usePublicClient } from 'wagmi'
 import { supabase } from '../client'
 import { TransactionCache, TransactionCacheInsert } from '../types'
 import { CONTRACT_ADDRESSES } from '@/app/lib/web3/config'
-import { PROPERTY_TOKEN_ABI, PROPERTY_TOKEN_HANDLER_ABI } from '@/app/lib/web3/abi'
+import { PROPERTY_TOKEN_ABI, PROPERTY_FACTORY_ABI } from '@/app/lib/web3/abi'
 import { Address, formatUnits, Log } from 'viem'
 
 export interface CachedTransaction extends TransactionCache {
@@ -186,9 +186,9 @@ export function useTransactionCache() {
         toBlock: endBlock,
       })
 
-      // Get Purchase events from PropertyTokenHandler
+      // Get Purchase events from PropertyFactory
       const purchaseLogs = await publicClient.getLogs({
-        address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+        address: CONTRACT_ADDRESSES.PROPERTY_FACTORY as Address,
         events: [
           {
             type: 'event',
@@ -231,7 +231,7 @@ export function useTransactionCache() {
           transaction_type: 'Purchase',
           amount: formatUnits(log.args.totalCost, 18),
           token_amount: formatUnits(log.args.amount, 18),
-          contract_address: CONTRACT_ADDRESSES.PROPERTY_MANAGER,
+          contract_address: CONTRACT_ADDRESSES.PROPERTY_FACTORY,
           timestamp: new Date().toISOString(),
           status: 'confirmed',
         })
@@ -275,9 +275,10 @@ export function useRealTimeTransactionCaching() {
 
   // Auto-cache Purchase events
   useWatchContractEvent({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    address: CONTRACT_ADDRESSES.PROPERTY_FACTORY as Address,
+    abi: PROPERTY_FACTORY_ABI,
     eventName: 'TokensPurchased',
+    enabled: false, // Disabled - Hedera doesn't support event watching (exceeds 1000 block limit)
     onLogs: async (logs) => {
       for (const log of logs) {
         await cacheTransaction(
@@ -287,7 +288,7 @@ export function useRealTimeTransactionCaching() {
           'Purchase',
           formatUnits(log.args.totalCost as bigint, 18),
           formatUnits(log.args.amount as bigint, 18),
-          CONTRACT_ADDRESSES.PROPERTY_MANAGER
+          CONTRACT_ADDRESSES.PROPERTY_FACTORY
         )
       }
     }
@@ -295,9 +296,10 @@ export function useRealTimeTransactionCaching() {
 
   // Auto-cache Staking events
   useWatchContractEvent({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    address: CONTRACT_ADDRESSES.PROPERTY_FACTORY as Address,
+    abi: PROPERTY_FACTORY_ABI,
     eventName: 'TokensStaked',
+    enabled: false, // Disabled - Hedera doesn't support event watching (exceeds 1000 block limit)
     onLogs: async (logs) => {
       for (const log of logs) {
         await cacheTransaction(
@@ -307,7 +309,7 @@ export function useRealTimeTransactionCaching() {
           'Stake',
           '0', // No HBAR cost for staking
           formatUnits(log.args.amount as bigint, 18),
-          CONTRACT_ADDRESSES.PROPERTY_MANAGER
+          CONTRACT_ADDRESSES.PROPERTY_FACTORY
         )
       }
     }
@@ -318,6 +320,7 @@ export function useRealTimeTransactionCaching() {
     address: CONTRACT_ADDRESSES.PROPERTY_TOKEN as Address,
     abi: PROPERTY_TOKEN_ABI,
     eventName: 'Transfer',
+    enabled: false, // Disabled - Hedera doesn't support event watching (exceeds 1000 block limit)
     onLogs: async (logs) => {
       for (const log of logs) {
         // Cache for both sender and receiver

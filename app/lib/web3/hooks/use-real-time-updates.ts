@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useWatchContractEvent, useAccount } from 'wagmi'
 import { CONTRACT_ADDRESSES } from '../config'
-import { PROPERTY_TOKEN_ABI, PROPERTY_TOKEN_HANDLER_ABI } from '../abi'
+import { PROPERTY_TOKEN_ABI, PROPERTY_FACTORY_ABI } from '../abi'
 import { Address, formatUnits } from 'viem'
 import { Transaction } from './use-transaction-history'
 import { useNotificationHelpers } from '@/app/lib/supabase/hooks/use-notifications'
@@ -41,11 +41,12 @@ export function useRealtimeUpdates() {
     setNewTransactionCount(0)
   }, [])
 
-  // Listen to Purchase events
+  // Listen to Purchase events (DISABLED - no PROPERTY_MANAGER contract exists)
   useWatchContractEvent({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    address: CONTRACT_ADDRESSES.PROPERTY_FACTORY as Address,
+    abi: PROPERTY_FACTORY_ABI,
     eventName: 'TokensPurchased',
+    enabled: false, // Disabled - Hedera doesn't support event watching (exceeds 1000 block limit)
     onLogs: (logs) => {
       logs.forEach(async (log) => {
         const notification: RealtimeNotification = {
@@ -75,11 +76,12 @@ export function useRealtimeUpdates() {
     }
   })
 
-  // Listen to Staking events
+  // Listen to Staking events (DISABLED - no PROPERTY_MANAGER contract exists)
   useWatchContractEvent({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    address: CONTRACT_ADDRESSES.PROPERTY_FACTORY as Address,
+    abi: PROPERTY_FACTORY_ABI,
     eventName: 'TokensStaked',
+    enabled: false, // Disabled - Hedera doesn't support event watching (exceeds 1000 block limit)
     onLogs: (logs) => {
       logs.forEach(async (log) => {
         const notification: RealtimeNotification = {
@@ -109,11 +111,12 @@ export function useRealtimeUpdates() {
     }
   })
 
-  // Listen to Revenue Distribution events
+  // Listen to Revenue Distribution events (DISABLED - no PROPERTY_MANAGER contract exists)
   useWatchContractEvent({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    address: CONTRACT_ADDRESSES.PROPERTY_FACTORY as Address,
+    abi: PROPERTY_FACTORY_ABI,
     eventName: 'RevenueDistributed',
+    enabled: false, // Disabled - Hedera doesn't support event watching (exceeds 1000 block limit)
     onLogs: (logs) => {
       logs.forEach(async (log) => {
         const notification: RealtimeNotification = {
@@ -142,6 +145,7 @@ export function useRealtimeUpdates() {
     address: CONTRACT_ADDRESSES.PROPERTY_TOKEN as Address,
     abi: PROPERTY_TOKEN_ABI,
     eventName: 'Transfer',
+    enabled: false, // Disabled - Hedera doesn't support event watching (exceeds 1000 block limit)
     onLogs: (logs) => {
       logs.forEach((log) => {
         const amount = log.args.value!

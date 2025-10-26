@@ -9,9 +9,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/app/components/ui/ca
 import { Button } from '@/app/components/ui/button'
 import { Badge } from '@/app/components/ui/badge'
 import { Skeleton } from '@/app/components/ui/skeleton'
-import { WalletConnect } from '@/app/components/web3/wallet-connect'
-import { MapPin, Building2, TrendingUp, Users, Calendar, DollarSign, Home } from 'lucide-react'
-import { usePropertyFactory, PropertyInfo, PropertyType } from '@/app/lib/web3/hooks/use-property-factory'
+import { DashboardLayout } from '@/app/components/layout/dashboard-layout'
+import { MapPin, Building2, TrendingUp, Users, Calendar, DollarSign, RefreshCw } from 'lucide-react'
+import { useAutoFetchProperties } from '@/app/lib/web3/hooks/use-auto-fetch-properties'
+import { useEnrichedProperties, EnrichedPropertyDisplay } from '@/app/lib/supabase/hooks/use-enriched-properties'
 import Image from 'next/image'
 
 // Property images mapping
@@ -25,40 +26,34 @@ const PROPERTY_IMAGES = [
   '/images/properties/house-10.jpg',
 ]
 
-const PROPERTY_TYPE_LABELS = {
-  [PropertyType.RESIDENTIAL]: 'Residential',
-  [PropertyType.COMMERCIAL]: 'Commercial',
-  [PropertyType.INDUSTRIAL]: 'Industrial',
-  [PropertyType.MIXED_USE]: 'Mixed Use',
-  [PropertyType.LAND]: 'Land',
-}
-
-const PROPERTY_TYPE_ICONS = {
-  [PropertyType.RESIDENTIAL]: '🏠',
-  [PropertyType.COMMERCIAL]: '🏢',
-  [PropertyType.INDUSTRIAL]: '🏭',
-  [PropertyType.MIXED_USE]: '🏘️',
-  [PropertyType.LAND]: '🌱',
-}
-
 // Disable static rendering for this page
 export const dynamic = 'force-dynamic'
 
 interface PropertyCardProps {
-  property: PropertyInfo
+  property: EnrichedPropertyDisplay
 }
 
 function PropertyCard({ property }: PropertyCardProps) {
   const router = useRouter()
-  const totalValueUSD = formatUnits(property.totalValue, 18)
-  const maxTokens = formatUnits(property.maxTokens, 18)
-  const pricePerToken = parseFloat(totalValueUSD) / parseFloat(maxTokens)
-  const createdDate = new Date(Number(property.createdAt) * 1000)
+  const pricePerToken = property.pricePerToken || '0'
+  const maxTokens = property.totalSupply || '0'
+  const createdDate = new Date(property.created_at)
 
-  const propertyImage = PROPERTY_IMAGES[property.id % PROPERTY_IMAGES.length]
+  // Use image from Supabase or fallback to placeholder
+  const propertyImage = (property.images && property.images.length > 0)
+    ? property.images[property.featured_image_index || 0]
+    : PROPERTY_IMAGES[Number(property.blockchainId) % PROPERTY_IMAGES.length]
+
+  // Symbol is auto-generated as PROP{id}
+  const symbol = `PROP${property.blockchainId}`
+
+  // Location from metadata
+  const locationText = property.metadata?.location?.city
+    ? `${property.metadata.location.city}${property.metadata.location.country ? ', ' + property.metadata.location.country : ''}`
+    : property.description?.substring(0, 50)
 
   const handleClick = () => {
-    router.push(`/property/${property.id}`)
+    router.push(`/property/${property.contract_address}`)
   }
 
   return (
@@ -85,20 +80,22 @@ function PropertyCard({ property }: PropertyCardProps) {
 
         <div className="absolute top-3 left-3">
           <Badge className="bg-white/90 text-gray-900 backdrop-blur-sm">
-            {PROPERTY_TYPE_LABELS[property.propertyType as PropertyType]}
+            {symbol}
           </Badge>
         </div>
 
         {/* Title on Image */}
         <div className="absolute bottom-3 left-3 right-3">
           <CardTitle className="text-white text-xl mb-1 flex items-center gap-2">
-            <span className="text-2xl">{PROPERTY_TYPE_ICONS[property.propertyType as PropertyType]}</span>
+            <Building2 className="h-5 w-5" />
             {property.name}
           </CardTitle>
-          <p className="text-white/90 text-sm flex items-center gap-1">
-            <MapPin className="h-3 w-3" />
-            {property.location}
-          </p>
+          {locationText && (
+            <p className="text-white/90 text-sm flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              {locationText}
+            </p>
+          )}
         </div>
       </div>
 
@@ -109,28 +106,21 @@ function PropertyCard({ property }: PropertyCardProps) {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <p className="text-sm text-gray-600 flex items-center gap-1">
-              <DollarSign className="h-3 w-3" />
-              Total Value
-            </p>
-            <p className="font-semibold">${parseFloat(totalValueUSD).toLocaleString()}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm text-gray-600 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               Price per Token
             </p>
-            <p className="font-semibold">${pricePerToken.toFixed(2)}</p>
+            <p className="font-semibold">{pricePerToken} HBAR</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-gray-600 flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              Max Supply
+            </p>
+            <p className="font-semibold">{parseFloat(maxTokens).toLocaleString()}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <p className="text-sm text-gray-600 flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              Max Tokens
-            </p>
-            <p className="font-semibold">{parseFloat(maxTokens).toLocaleString()}</p>
-          </div>
           <div className="space-y-1">
             <p className="text-sm text-gray-600 flex items-center gap-1">
               <Calendar className="h-3 w-3" />
@@ -138,20 +128,21 @@ function PropertyCard({ property }: PropertyCardProps) {
             </p>
             <p className="font-semibold">{createdDate.toLocaleDateString()}</p>
           </div>
+          <div className="space-y-1">
+            <p className="text-sm text-gray-600 flex items-center gap-1">
+              <DollarSign className="h-3 w-3" />
+              Total Value
+            </p>
+            <p className="font-semibold">{(parseFloat(pricePerToken) * parseFloat(maxTokens)).toLocaleString()} HBAR</p>
+          </div>
         </div>
 
         <div className="pt-2 border-t">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className="text-xs text-gray-500">Token Symbol</p>
-              <p className="text-sm font-medium">{property.symbol}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-gray-500">Creator</p>
-              <p className="text-sm font-medium font-mono text-xs">
-                {property.creator.slice(0, 6)}...{property.creator.slice(-4)}
-              </p>
-            </div>
+          <div className="space-y-1">
+            <p className="text-xs text-gray-500">Token Contract</p>
+            <p className="text-sm font-medium font-mono text-xs">
+              {property.tokenContract.slice(0, 6)}...{property.tokenContract.slice(-4)}
+            </p>
           </div>
         </div>
 
@@ -163,7 +154,7 @@ function PropertyCard({ property }: PropertyCardProps) {
             handleClick()
           }}
         >
-          View Details & Calculator
+          View Details
         </Button>
       </CardContent>
     </Card>
@@ -199,174 +190,123 @@ function PropertySkeleton() {
 
 export default function HomePage() {
   const { address, isConnected } = useAccount()
-  const { properties, isLoading, error, fetchProperties, propertyCount } = usePropertyFactory()
-  const [filter, setFilter] = useState<PropertyType | 'all'>('all')
-  const [sortBy, setSortBy] = useState<'newest' | 'price' | 'value'>('newest')
+  const { properties, isLoading, error, refetch } = useEnrichedProperties()
+  const [sortBy, setSortBy] = useState<'newest' | 'price' | 'supply'>('newest')
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
 
-  const filteredProperties = properties.filter(property => {
-    if (filter === 'all') return true
-    return property.propertyType === filter
-  }).sort((a, b) => {
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await refetch()
+      setLastRefresh(new Date())
+    } catch (err) {
+      console.error('Refresh error:', err)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+  const sortedProperties = [...properties].sort((a, b) => {
     switch (sortBy) {
       case 'newest':
-        return Number(b.createdAt) - Number(a.createdAt)
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       case 'price':
-        const priceA = parseFloat(formatUnits(a.totalValue, 18)) / parseFloat(formatUnits(a.maxTokens, 18))
-        const priceB = parseFloat(formatUnits(b.totalValue, 18)) / parseFloat(formatUnits(b.maxTokens, 18))
+        const priceA = parseFloat(a.pricePerToken || '0')
+        const priceB = parseFloat(b.pricePerToken || '0')
         return priceA - priceB
-      case 'value':
-        return parseFloat(formatUnits(b.totalValue, 18)) - parseFloat(formatUnits(a.totalValue, 18))
+      case 'supply':
+        return parseFloat(b.totalSupply) - parseFloat(a.totalSupply)
       default:
         return 0
     }
   })
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation Bar */}
-      <nav className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <Home className="w-6 h-6 text-gray-900" />
-              <span className="text-lg font-semibold text-gray-900">Welcome Home</span>
-            </Link>
-
-            <div className="flex items-center gap-4">
-              {isConnected ? (
-                <>
-                  <span className="text-sm text-gray-600">
-                    {address?.slice(0, 6)}...{address?.slice(-4)}
-                  </span>
-                  <Link href="/dashboard">
-                    <Button variant="outline" size="sm">Dashboard</Button>
-                  </Link>
-                  <Link href="/settings">
-                    <Button variant="outline" size="sm">Settings</Button>
-                  </Link>
-                </>
-              ) : (
-                <WalletConnect />
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Fractional Real Estate Ownership
-            </h1>
-            <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-              Invest in premium properties with as little as one token. Own a fraction, earn proportional returns.
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+          <div>
+            <h2 className="text-3xl font-bold">Property Marketplace</h2>
+            <p className="text-gray-600 mt-1">
+              {isLoading ? 'Loading...' : `${properties.length} properties available`}
             </p>
-            {!isConnected && (
-              <div className="flex justify-center">
-                <WalletConnect />
-              </div>
+            {lastRefresh && !isLoading && (
+              <p className="text-xs text-gray-500 mt-1">
+                Last updated: {lastRefresh.toLocaleTimeString()}
+              </p>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <div>
-              <h2 className="text-3xl font-bold">Available Properties</h2>
-              <p className="text-gray-600 mt-1">
-                {isLoading ? 'Loading...' : `${propertyCount} properties available for fractional investment`}
+          <div className="flex gap-2 items-center">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'newest' | 'price' | 'supply')}
+              className="border rounded-md px-3 py-2 text-sm bg-white"
+            >
+              <option value="newest">Newest First</option>
+              <option value="price">Price (Low to High)</option>
+              <option value="supply">Supply (High to Low)</option>
+            </select>
+
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              disabled={isRefreshing || isLoading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </div>
+        </div>
+
+        {error && (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <div className="space-y-2">
+                <p className="text-red-600">Failed to load properties</p>
+                <p className="text-sm text-gray-600">{error}</p>
+                <Button onClick={handleRefresh} variant="outline" size="sm" disabled={isRefreshing}>
+                  {isRefreshing ? 'Refreshing...' : 'Try Again'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <PropertySkeleton key={i} />
+            ))}
+          </div>
+        ) : sortedProperties.length === 0 ? (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Properties Found</h3>
+              <p className="text-gray-600 mb-4">
+                No properties have been listed yet. Check back soon!
               </p>
-            </div>
-
-            <div className="flex gap-2">
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value as PropertyType | 'all')}
-                className="border rounded-md px-3 py-2 text-sm bg-white"
-              >
-                <option value="all">All Types</option>
-                {Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'newest' | 'price' | 'value')}
-                className="border rounded-md px-3 py-2 text-sm bg-white"
-              >
-                <option value="newest">Newest First</option>
-                <option value="price">Price (Low to High)</option>
-                <option value="value">Value (High to Low)</option>
-              </select>
-            </div>
+              <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {sortedProperties.map((property) => (
+              <PropertyCard
+                key={property.contract_address}
+                property={property}
+              />
+            ))}
           </div>
-
-          {error && (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <div className="space-y-2">
-                  <p className="text-red-600">Failed to load properties</p>
-                  <p className="text-sm text-gray-600">{error}</p>
-                  <Button onClick={fetchProperties} variant="outline" size="sm">
-                    Try Again
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <PropertySkeleton key={i} />
-              ))}
-            </div>
-          ) : filteredProperties.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Properties Found</h3>
-                <p className="text-gray-600 mb-4">
-                  {propertyCount === 0
-                    ? 'No properties have been listed yet.'
-                    : 'No properties match your current filters.'
-                  }
-                </p>
-                {propertyCount === 0 && (
-                  <Button onClick={fetchProperties} variant="outline">
-                    Refresh
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredProperties.map((property) => (
-                <PropertyCard
-                  key={property.id}
-                  property={property}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        )}
       </div>
-
-      {/* Footer */}
-      <footer className="bg-white border-t mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-600 text-sm">
-            <p>Welcome Home International Group</p>
-            <p className="mt-2">Building pathways to wealth through blockchain-powered real estate</p>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </DashboardLayout>
   )
 }

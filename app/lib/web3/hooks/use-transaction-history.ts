@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useWatchContractEvent, usePublicClient, useAccount } from 'wagmi'
 import { CONTRACT_ADDRESSES } from '../config'
-import { PROPERTY_TOKEN_ABI, PROPERTY_TOKEN_HANDLER_ABI } from '../abi'
+import { PROPERTY_TOKEN_ABI, PROPERTY_FACTORY_ABI } from '../abi'
 import { Address, formatUnits } from 'viem'
 import { useTransactionCache, CachedTransaction } from '@/app/lib/supabase/hooks/use-transaction-cache'
 
@@ -82,6 +82,7 @@ export function useTransactionHistory(userAddress?: Address, limit: number = 50)
     address: CONTRACT_ADDRESSES.PROPERTY_TOKEN as Address,
     abi: PROPERTY_TOKEN_ABI,
     eventName: 'Transfer',
+    enabled: false, // Disabled - Hedera doesn't support event watching (exceeds 1000 block limit)
     onLogs: (logs) => {
       const newTransactions = logs.map((log) => ({
         id: `${log.transactionHash}-${log.logIndex}`,
@@ -105,11 +106,12 @@ export function useTransactionHistory(userAddress?: Address, limit: number = 50)
     }
   })
 
-  // Listen to TokensPurchased events from Token Handler
+  // Listen to TokensPurchased events from PropertyFactory
   useWatchContractEvent({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    address: CONTRACT_ADDRESSES.PROPERTY_FACTORY as Address,
+    abi: PROPERTY_FACTORY_ABI,
     eventName: 'TokensPurchased',
+    enabled: false, // Disabled - Hedera doesn't support event watching (exceeds 1000 block limit)
     onLogs: (logs) => {
       const newTransactions = logs.map((log) => ({
         id: `${log.transactionHash}-${log.logIndex}`,
@@ -136,9 +138,10 @@ export function useTransactionHistory(userAddress?: Address, limit: number = 50)
 
   // Listen to TokensStaked events
   useWatchContractEvent({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    address: CONTRACT_ADDRESSES.PROPERTY_FACTORY as Address,
+    abi: PROPERTY_FACTORY_ABI,
     eventName: 'TokensStaked',
+    enabled: false, // Disabled - Hedera doesn't support event watching (exceeds 1000 block limit)
     onLogs: (logs) => {
       const newTransactions = logs.map((log) => ({
         id: `${log.transactionHash}-${log.logIndex}`,
@@ -147,7 +150,7 @@ export function useTransactionHistory(userAddress?: Address, limit: number = 50)
         timestamp: Date.now(),
         type: 'Stake' as const,
         from: log.args.staker!,
-        to: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+        to: CONTRACT_ADDRESSES.PROPERTY_FACTORY as Address,
         amount: log.args.amount!,
         tokenAmount: log.args.amount!,
         status: 'Completed' as const,
@@ -165,9 +168,10 @@ export function useTransactionHistory(userAddress?: Address, limit: number = 50)
 
   // Listen to RevenueDistributed events
   useWatchContractEvent({
-    address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
-    abi: PROPERTY_TOKEN_HANDLER_ABI,
+    address: CONTRACT_ADDRESSES.PROPERTY_FACTORY as Address,
+    abi: PROPERTY_FACTORY_ABI,
     eventName: 'RevenueDistributed',
+    enabled: false, // Disabled - Hedera doesn't support event watching (exceeds 1000 block limit)
     onLogs: (logs) => {
       const newTransactions = logs.map((log) => ({
         id: `${log.transactionHash}-${log.logIndex}`,
@@ -230,7 +234,7 @@ export function useTransactionHistory(userAddress?: Address, limit: number = 50)
         let purchaseLogs: any[] = []
         try {
           purchaseLogs = await publicClient.getLogs({
-            address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
+            address: CONTRACT_ADDRESSES.PROPERTY_FACTORY as Address,
             events: [
               {
                 type: 'event',

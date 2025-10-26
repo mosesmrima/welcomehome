@@ -11,18 +11,12 @@ import { WalletConnect } from "../web3/wallet-connect"
 import { NotificationBell } from "../ui/notifications"
 import { UserProfileModal } from "../profile/user-profile-modal"
 import { useUserProfile } from "@/app/lib/supabase/hooks/use-user-profile"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 
 export function Header() {
   const { address, isConnected } = useAccount()
   const { profile } = useUserProfile()
-  const [showWalletModal, setShowWalletModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -56,69 +50,37 @@ export function Header() {
             />
           </div>
 
-          {/* Wallet Connection */}
-          {mounted && (
-            <>
-              {isConnected && address ? (
-                <Button
-                  variant="outline"
-                  onClick={() => setShowWalletModal(true)}
-                  className="flex items-center gap-2"
-                >
-                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                  <Wallet className="h-4 w-4" />
-                  <span className="hidden sm:inline">{formatAddress(address)}</span>
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => setShowWalletModal(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Wallet className="h-4 w-4" />
-                  <span className="hidden sm:inline">Connect Wallet</span>
-                </Button>
-              )}
+          {/* KYC Status Badge - Only show if connected and verified */}
+          {isConnected && profile?.kyc_status === 'approved' && (
+            <Badge className="bg-green-100 text-green-800 border-green-300">
+              Verified
+            </Badge>
+          )}
 
-              {/* User Profile Button */}
-              {isConnected && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowProfileModal(true)}
-                  className="flex items-center gap-2"
-                >
-                  <User className="h-4 w-4" />
-                  {profile?.name && (
-                    <span className="hidden sm:inline text-sm">
-                      {profile.name.length > 15 ? `${profile.name.slice(0, 15)}...` : profile.name}
-                    </span>
-                  )}
-                </Button>
+          {/* Wallet Connection */}
+          <WalletConnect compact />
+
+          {/* User Profile Button */}
+          {isConnected && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowProfileModal(true)}
+              className="flex items-center gap-2"
+            >
+              <User className="h-4 w-4" />
+              {profile?.name && (
+                <span className="hidden sm:inline text-sm">
+                  {profile.name.length > 15 ? `${profile.name.slice(0, 15)}...` : profile.name}
+                </span>
               )}
-            </>
+            </Button>
           )}
 
           {/* Real-time Notification Bell */}
           <NotificationBell />
         </div>
       </header>
-
-      {/* Wallet Modal */}
-      {showWalletModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="relative max-w-md w-full">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowWalletModal(false)}
-              className="absolute -top-10 right-0 text-white hover:bg-white/10"
-            >
-              ×
-            </Button>
-            <WalletConnect />
-          </div>
-        </div>
-      )}
 
       {/* User Profile Modal */}
       <UserProfileModal

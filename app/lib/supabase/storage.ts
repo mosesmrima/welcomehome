@@ -1,6 +1,6 @@
 import { supabase } from './client'
 
-export type StorageBucket = 'property-images' | 'property-documents' | 'user-avatars'
+export type StorageBucket = 'property-images' | 'property-documents' | 'user-avatars' | 'kyc-documents'
 
 export interface UploadResult {
   success: boolean
@@ -14,6 +14,7 @@ const FILE_SIZE_LIMITS = {
   'property-images': 5 * 1024 * 1024, // 5MB
   'property-documents': 10 * 1024 * 1024, // 10MB
   'user-avatars': 2 * 1024 * 1024, // 2MB
+  'kyc-documents': 10 * 1024 * 1024, // 10MB
 }
 
 // Allowed file types
@@ -21,6 +22,7 @@ const ALLOWED_FILE_TYPES = {
   'property-images': ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
   'property-documents': ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
   'user-avatars': ['image/jpeg', 'image/png', 'image/webp'],
+  'kyc-documents': ['application/pdf', 'image/jpeg', 'image/png'],
 }
 
 /**

@@ -29,6 +29,7 @@ export default function SettingsPage() {
   const mounted = useMounted()
   const [activeTab, setActiveTab] = useState("profile")
   const { address, isConnected } = useAccount()
+  const { profile, isAccredited } = useUserProfile()
 
   if (!mounted) {
     return (
@@ -40,7 +41,6 @@ export default function SettingsPage() {
       </div>
     )
   }
-  const { profile, isAccredited } = useUserProfile()
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`

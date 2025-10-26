@@ -46,24 +46,10 @@ export const hederaMainnet = {
   },
 } as const
 
-// Contract addresses for NEW MODULAR ARCHITECTURE deployed on Hedera Testnet
-export const CONTRACT_ADDRESSES = {
-  // Core Infrastructure Contracts
-  PAYMENT_TOKEN: process.env.NEXT_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x17F78C6f9F22356838d4A5fF1E1f9413B575D207',
-  KYC_REGISTRY: process.env.NEXT_PUBLIC_KYC_REGISTRY_ADDRESS || '0x7570dF6b166fF2A173DcFC699ca48F0F8bCBc701',
-  OWNERSHIP_REGISTRY: process.env.NEXT_PUBLIC_OWNERSHIP_REGISTRY_ADDRESS || '0x25eFAcD45224F995933aAc701dDE3D7Fb25012D8',
-  PROPERTY_FACTORY: process.env.NEXT_PUBLIC_PROPERTY_FACTORY_ADDRESS || '0x53FeF62106b142022951309A55a3552d1426BBd1',
-  PROPERTY_GOVERNANCE: process.env.NEXT_PUBLIC_PROPERTY_GOVERNANCE_ADDRESS || '0x0dd79160Ea9358a2F7440f369C5977CE168018b5',
-
-  // Demo/Testing Contracts (for initial implementation and testing)
-  DEMO_PROPERTY_TOKEN: process.env.NEXT_PUBLIC_DEMO_PROPERTY_TOKEN_ADDRESS || '0x6a883E83BF436872a455Db1A55e00477D7517174',
-  DEMO_TOKEN_HANDLER: process.env.NEXT_PUBLIC_DEMO_TOKEN_HANDLER_ADDRESS || '0xA0f36ed1D2723aC7674035B4cEe489851176D827',
-
-  // Legacy Aliases (for backward compatibility during migration)
-  PROPERTY_TOKEN: process.env.NEXT_PUBLIC_DEMO_PROPERTY_TOKEN_ADDRESS || '0x6a883E83BF436872a455Db1A55e00477D7517174',
-  PROPERTY_MANAGER: process.env.NEXT_PUBLIC_DEMO_TOKEN_HANDLER_ADDRESS || '0xA0f36ed1D2723aC7674035B4cEe489851176D827',
-  GOVERNANCE: process.env.NEXT_PUBLIC_PROPERTY_GOVERNANCE_ADDRESS || '0x0dd79160Ea9358a2F7440f369C5977CE168018b5',
-} as const
+// Import centralized contract addresses
+// NOTE: Contract addresses are now managed in addresses.ts for easier deployment management
+// Update .env.local after deployment and addresses will automatically be loaded
+export { CONTRACT_ADDRESSES } from './addresses'
 
 // Determine which Hedera network to use based on environment
 const hederaNetwork = process.env.NEXT_PUBLIC_HEDERA_NETWORK === 'mainnet' ? hederaMainnet : hederaTestnet

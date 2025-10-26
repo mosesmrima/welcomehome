@@ -48,6 +48,12 @@ export interface Database {
           images: Json | null
           documents: Json | null
           metadata: Json | null
+          property_type: 'residential' | 'commercial' | 'land' | 'industrial' | 'mixed_use' | null
+          size_value: number | null
+          size_unit: 'acres' | 'sqm' | 'sqft' | null
+          status: 'available' | 'sold_out' | 'coming_soon' | null
+          amenities: string[] | null
+          featured_image_index: number | null
           created_at: string
         }
         Insert: {
@@ -59,6 +65,12 @@ export interface Database {
           images?: Json | null
           documents?: Json | null
           metadata?: Json | null
+          property_type?: 'residential' | 'commercial' | 'land' | 'industrial' | 'mixed_use' | null
+          size_value?: number | null
+          size_unit?: 'acres' | 'sqm' | 'sqft' | null
+          status?: 'available' | 'sold_out' | 'coming_soon' | null
+          amenities?: string[] | null
+          featured_image_index?: number | null
           created_at?: string
         }
         Update: {
@@ -70,6 +82,12 @@ export interface Database {
           images?: Json | null
           documents?: Json | null
           metadata?: Json | null
+          property_type?: 'residential' | 'commercial' | 'land' | 'industrial' | 'mixed_use' | null
+          size_value?: number | null
+          size_unit?: 'acres' | 'sqm' | 'sqft' | null
+          status?: 'available' | 'sold_out' | 'coming_soon' | null
+          amenities?: string[] | null
+          featured_image_index?: number | null
           created_at?: string
         }
       }
@@ -172,3 +190,39 @@ export type UserInsert = Database['public']['Tables']['users']['Insert']
 export type PropertyInsert = Database['public']['Tables']['properties']['Insert']
 export type TransactionCacheInsert = Database['public']['Tables']['transaction_cache']['Insert']
 export type NotificationInsert = Database['public']['Tables']['notifications']['Insert']
+
+// Property-specific types
+export type PropertyType = 'residential' | 'commercial' | 'land' | 'industrial' | 'mixed_use'
+export type SizeUnit = 'acres' | 'sqm' | 'sqft'
+export type PropertyStatus = 'available' | 'sold_out' | 'coming_soon'
+
+// Metadata structure for properties table
+export interface PropertyMetadata {
+  details?: {
+    bedrooms?: number
+    bathrooms?: number
+    yearBuilt?: number
+    floors?: number
+    parking?: number
+  }
+  financials?: {
+    expectedROI?: number
+    rentalYield?: number
+    appreciationRate?: number
+  }
+  location?: {
+    address?: string
+    city?: string
+    country?: string
+    coordinates?: {
+      lat: number
+      lng: number
+    }
+  }
+}
+
+// Enhanced property with typed metadata
+export interface EnrichedProperty extends Omit<Property, 'metadata' | 'images'> {
+  metadata: PropertyMetadata | null
+  images: string[] // Array of public URLs
+}

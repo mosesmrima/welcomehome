@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { usePublicClient, useAccount } from 'wagmi'
 import { CONTRACT_ADDRESSES } from '../config'
-import { PROPERTY_TOKEN_HANDLER_ABI, PROPERTY_TOKEN_ABI } from '../abi'
+import { MARKETPLACE_ABI, PROPERTY_TOKEN_ABI } from '../abi'
 import { Address, formatUnits } from 'viem'
 
 export interface TokenMetrics {
@@ -72,12 +72,12 @@ export function useTokenMetrics() {
         }),
         publicClient.readContract({
           address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
-          abi: PROPERTY_TOKEN_HANDLER_ABI,
+          abi: MARKETPLACE_ABI,
           functionName: 'getTokenPrice',
         }),
         publicClient.readContract({
           address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
-          abi: PROPERTY_TOKEN_HANDLER_ABI,
+          abi: MARKETPLACE_ABI,
           functionName: 'totalStaked',
         }).catch(() => BigInt(0)), // Fallback if function doesn't exist
       ])
@@ -236,7 +236,7 @@ export function useStakingMetrics() {
 
       const totalStaked = await publicClient.readContract({
         address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as Address,
-        abi: PROPERTY_TOKEN_HANDLER_ABI,
+        abi: MARKETPLACE_ABI,
         functionName: 'totalStaked',
       }).catch(() => BigInt(0))
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Activity, Settings, HelpCircle, LogOut, Instagram, Linkedin, ShoppingCart, Lock, DollarSign, Shield, Vote, BarChart3, Building2, FileText } from "lucide-react"
+import { Home, Activity, Settings, HelpCircle, Instagram, Linkedin, Shield, FileText } from "lucide-react"
 import { cn } from "@/app/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Button } from "../ui/button"
@@ -10,19 +10,9 @@ import { motion } from "framer-motion"
 
 const sidebarItems = [
   {
-    name: "Dashboard",
-    href: "/dashboard",
+    name: "Home",
+    href: "/",
     icon: Home,
-  },
-  {
-    name: "Properties",
-    href: "/properties",
-    icon: Building2,
-  },
-  {
-    name: "Marketplace",
-    href: "/marketplace",
-    icon: ShoppingCart,
   },
   {
     name: "KYC",
@@ -30,29 +20,9 @@ const sidebarItems = [
     icon: FileText,
   },
   {
-    name: "Staking",
-    href: "/staking",
-    icon: Lock,
-  },
-  {
-    name: "Revenue",
-    href: "/revenue",
-    icon: DollarSign,
-  },
-  {
     name: "Transactions",
     href: "/transactions",
     icon: Activity,
-  },
-  {
-    name: "Analytics",
-    href: "/analytics",
-    icon: BarChart3,
-  },
-  {
-    name: "Governance",
-    href: "/governance",
-    icon: Vote,
   },
   {
     name: "Admin",
