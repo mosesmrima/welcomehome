@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Activity, Settings, HelpCircle, Instagram, Linkedin, Shield, FileText } from "lucide-react"
+import { Home, Activity, Settings, HelpCircle, Instagram, Linkedin, Shield, FileText, Wallet } from "lucide-react"
 import { cn } from "@/app/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Button } from "../ui/button"
@@ -13,6 +13,11 @@ const sidebarItems = [
     name: "Home",
     href: "/",
     icon: Home,
+  },
+  {
+    name: "Portfolio",
+    href: "/portfolio",
+    icon: Wallet,
   },
   {
     name: "KYC",
