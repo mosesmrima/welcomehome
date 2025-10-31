@@ -7,6 +7,7 @@ import { cn } from "@/app/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Button } from "../ui/button"
 import { motion } from "framer-motion"
+import { useAccount } from "wagmi"
 
 const sidebarItems = [
   {
@@ -43,16 +44,27 @@ const sidebarItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { address, isConnected } = useAccount()
+
+  const displayAddress = address
+    ? `${address.slice(0, 6)}...${address.slice(-4)}`
+    : 'Not Connected'
+
+  const avatarInitials = address
+    ? address.slice(2, 4).toUpperCase()
+    : '??'
 
   return (
     <div className="flex h-screen w-64 flex-col bg-black">
       {/* User Profile */}
       <div className="flex flex-col items-center justify-center p-6 text-white">
         <Avatar className="h-16 w-16 mb-3">
-          <AvatarFallback className="bg-primary text-white text-lg">JM</AvatarFallback>
+          <AvatarFallback className="bg-primary text-white text-lg">{avatarInitials}</AvatarFallback>
         </Avatar>
-        <h3 className="text-sm font-semibold">John Martins</h3>
-        <p className="text-xs text-gray-300">johnmartins@gmail.com</p>
+        <h3 className="text-sm font-semibold">{displayAddress}</h3>
+        <p className="text-xs text-gray-300">
+          {isConnected ? 'Wallet Connected' : 'No wallet connected'}
+        </p>
       </div>
 
       {/* Navigation Items */}

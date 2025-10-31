@@ -2,7 +2,7 @@
 
 A modern web application for real estate tokenization on Hedera blockchain, enabling property browsing, fractional ownership purchases, and portfolio management.
 
-**Live Application**: [app.welcomehomeintl.com](https://app.welcomehomeintl.com)
+**Live Application**: [https://marketplace.welcomehomeinternationalgroup.com/](https://marketplace.welcomehomeinternationalgroup.com/)
 
 ## Overview
 
@@ -237,7 +237,7 @@ Access the application at [http://localhost:3000](http://localhost:3000)
 
 ### Deployment
 
-The application is deployed at [app.welcomehomeintl.com](https://app.welcomehomeintl.com)
+The application is deployed at [https://marketplace.welcomehomeinternationalgroup.com/](https://marketplace.welcomehomeinternationalgroup.com/)
 
 Deployment is automated via Vercel with the following configuration:
 - Framework: Next.js
