@@ -1,7 +1,7 @@
 "use client"
 
 
-import { Search, Bell, Wallet, Home, User, LogOut } from "lucide-react"
+import { Search, Bell, Wallet, Home, User } from "lucide-react"
 
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
@@ -90,10 +90,8 @@ export function Header() {
                 variant="outline"
                 size="sm"
                 onClick={signOut}
-                className="flex items-center gap-2"
               >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
+                Logout
               </Button>
             </>
           )}
