@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Card } from "@/app/components/ui/card"
 import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
@@ -33,6 +34,10 @@ import { useAccreditedStatus } from "@/app/lib/web3/hooks/use-token-handler"
 import { useMounted } from "@/app/lib/hooks/use-mounted"
 import { usePropertyFactory, PropertyType } from "@/app/lib/web3/hooks/use-property-factory"
 import { CONTRACT_ADDRESSES } from "@/app/lib/web3/config"
+import { PropertyList } from "@/app/components/admin/property-list"
+import { EditPropertyModal } from "@/app/components/admin/edit-property-modal"
+import { PropertyData, usePropertyCRUD } from "@/app/lib/supabase/hooks/use-property-crud"
+import { FileUpload } from "@/app/components/ui/file-upload"
 
 // Disable static rendering for this page
 export const dynamic = 'force-dynamic'
@@ -41,6 +46,32 @@ export default function AdminPage() {
   const mounted = useMounted()
   const { address, isConnected } = useAccount()
   const roles = useUserRoles(address)
+  const [selectedProperty, setSelectedProperty] = useState<PropertyData | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [propertyToDelete, setPropertyToDelete] = useState<PropertyData | null>(null)
+  const { deleteProperty, fetchAllProperties } = usePropertyCRUD()
+
+  const handleEditProperty = (property: PropertyData) => {
+    setSelectedProperty(property)
+    setIsEditModalOpen(true)
+  }
+
+  const handleViewProperty = (property: PropertyData) => {
+    // Could navigate to property details page
+    console.log('View property:', property)
+  }
+
+  const handleDeleteProperty = (property: PropertyData) => {
+    setPropertyToDelete(property)
+  }
+
+  const confirmDelete = async () => {
+    if (propertyToDelete) {
+      await deleteProperty(propertyToDelete.contract_address, false) // Soft delete
+      setPropertyToDelete(null)
+      fetchAllProperties()
+    }
+  }
 
   if (!mounted) {
     return (
@@ -119,7 +150,72 @@ export default function AdminPage() {
       </div>
 
       {/* Property Creation - Full Width */}
-      <PropertyCreation />
+      <PropertyCreation onPropertyCreated={fetchAllProperties} />
+
+      {/* Property Management - Full Width */}
+      <Card className="p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="bg-indigo-100 p-2 rounded-lg">
+            <Building2 className="h-5 w-5 text-indigo-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Manage Properties</h3>
+            <p className="text-sm text-gray-600">View, edit, and manage all properties in the system</p>
+          </div>
+        </div>
+        <PropertyList
+          onEdit={handleEditProperty}
+          onView={handleViewProperty}
+          onDelete={handleDeleteProperty}
+        />
+      </Card>
+
+      {/* Edit Property Modal */}
+      {selectedProperty && (
+        <EditPropertyModal
+          property={selectedProperty}
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false)
+            setSelectedProperty(null)
+          }}
+          onSuccess={() => {
+            fetchAllProperties()
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {propertyToDelete && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-red-100 p-2 rounded-lg">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold">Confirm Deletion</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to deactivate <span className="font-semibold">{propertyToDelete.name}</span>?
+              This will make the property inactive but it can be reactivated later.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setPropertyToDelete(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDelete}
+              >
+                Deactivate Property
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Contract Management */}
@@ -423,7 +519,7 @@ function RevenueManagement() {
   )
 }
 
-function PropertyCreation() {
+function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => void }) {
   const [formData, setFormData] = useState({
     name: '',
     symbol: '',
@@ -432,11 +528,14 @@ function PropertyCreation() {
     maxTokens: '',
     propertyType: '0', // RESIDENTIAL
   })
+  const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const [isCreating, setIsCreating] = useState(false)
   const [createSuccess, setCreateSuccess] = useState(false)
   const [createError, setCreateError] = useState('')
+  const { address } = useAccount()
 
   const { deployProperty } = usePropertyFactory()
+  const { createProperty } = usePropertyCRUD()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -449,6 +548,11 @@ function PropertyCreation() {
       return
     }
 
+    if (!address) {
+      setCreateError('Please connect your wallet')
+      return
+    }
+
     setIsCreating(true)
     setCreateError('')
     setCreateSuccess(false)
@@ -457,7 +561,8 @@ function PropertyCreation() {
       const propertyType = parseInt(formData.propertyType) as PropertyType
       const paymentToken = CONTRACT_ADDRESSES.PAYMENT_TOKEN as Address
 
-      await deployProperty(
+      // Deploy property smart contract
+      const deployResult = await deployProperty(
         formData.name,
         formData.symbol,
         '', // ipfsHash - empty for now, could be added later
@@ -469,6 +574,34 @@ function PropertyCreation() {
         '1' // creation fee in HBAR
       )
 
+      // If deployment successful, save to database
+      if (deployResult) {
+        // Extract contract address from deployment result
+        // Note: This assumes deployResult contains the contract address
+        // You may need to adjust based on actual return value
+        const contractAddress = deployResult.contractAddress || CONTRACT_ADDRESSES.PROPERTY_TOKEN
+
+        await createProperty({
+          contract_address: contractAddress as string,
+          handler_address: CONTRACT_ADDRESSES.PROPERTY_MANAGER as string,
+          factory_address: CONTRACT_ADDRESSES.PROPERTY_FACTORY as string,
+          name: formData.name,
+          symbol: formData.symbol,
+          total_value: formData.totalValue,
+          max_tokens: formData.maxTokens,
+          property_type: ['RESIDENTIAL', 'COMMERCIAL', 'INDUSTRIAL', 'MIXED_USE', 'LAND'][propertyType] as PropertyData['property_type'],
+          creator_address: address,
+          location: {
+            address: formData.location,
+          },
+          images: uploadedImages,
+          is_active: true,
+          is_verified: false,
+        })
+
+        onPropertyCreated?.()
+      }
+
       setCreateSuccess(true)
       // Reset form
       setFormData({
@@ -479,11 +612,21 @@ function PropertyCreation() {
         maxTokens: '',
         propertyType: '0',
       })
+      setUploadedImages([])
     } catch (err: any) {
       setCreateError(err.message || 'Failed to create property')
     } finally {
       setIsCreating(false)
     }
+  }
+
+  const handleImageUploadSuccess = (results: any[]) => {
+    const imageUrls = results.filter(r => r.success && r.url).map(r => r.url!)
+    setUploadedImages(prev => [...prev, ...imageUrls])
+  }
+
+  const handleImageRemove = (imageUrl: string) => {
+    setUploadedImages(prev => prev.filter(url => url !== imageUrl))
   }
 
   return (
@@ -572,6 +715,51 @@ function PropertyCreation() {
             onChange={handleInputChange}
           />
         </div>
+      </div>
+
+      {/* Property Images Upload */}
+      <div className="mt-6">
+        <Label className="mb-3 block">Property Images</Label>
+        {uploadedImages.length > 0 && (
+          <div className="mb-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+            {uploadedImages.map((imageUrl, index) => (
+              <div key={index} className="relative group">
+                <div className="relative h-24 rounded-lg overflow-hidden bg-gray-100">
+                  <Image
+                    src={imageUrl}
+                    alt={`Property image ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => handleImageRemove(imageUrl)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+                {index === 0 && (
+                  <div className="absolute bottom-1 left-1 bg-blue-600 text-white text-xs px-1 py-0.5 rounded">
+                    Primary
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        <FileUpload
+          bucket="property-images"
+          pathPrefix="properties/new"
+          accept="image/*"
+          multiple={true}
+          maxFiles={10}
+          onUploadSuccess={handleImageUploadSuccess}
+          onUploadError={(error) => setCreateError(error)}
+        />
       </div>
 
       <div className="mt-6">
