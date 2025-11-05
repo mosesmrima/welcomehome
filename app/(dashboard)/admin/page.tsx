@@ -904,10 +904,52 @@ function PropertyCreation() {
         ipfsURI: metadataURI,
       })
 
-      // Step 2: Wait for blockchain confirmation and get contract address
-      // The contract address will be available in the transaction receipt
-      // For now, we'll use a placeholder and update this in the next phase
-      // TODO: Extract contract address from transaction result
+      // Step 2: Save property metadata to Supabase database
+      if (createPropertyHash || result) {
+        // Generate contract address (for now use hash, but this should come from transaction result)
+        const contractAddress = createPropertyHash || `0x${Date.now().toString(16)}`
+
+        // Prepare comprehensive property data
+        const propertyData = {
+          contract_address: contractAddress,
+          name: formData.name,
+          description: formData.description,
+          property_type: formData.propertyType,
+          status: formData.status,
+          size_value: formData.sizeValue ? parseFloat(formData.sizeValue) : null,
+          size_unit: formData.sizeUnit,
+          location: location.address || location.city ? {
+            address: location.address,
+            city: location.city,
+            country: location.country,
+            coordinates: location.lat && location.lng ? {
+              lat: parseFloat(location.lat),
+              lng: parseFloat(location.lng)
+            } : null
+          } : null,
+          amenities: amenities,
+          property_details: showPropertyDetails ? {
+            bedrooms: propertyDetails.bedrooms ? parseInt(propertyDetails.bedrooms) : null,
+            bathrooms: propertyDetails.bathrooms ? parseInt(propertyDetails.bathrooms) : null,
+            yearBuilt: propertyDetails.yearBuilt ? parseInt(propertyDetails.yearBuilt) : null,
+            floors: propertyDetails.floors ? parseInt(propertyDetails.floors) : null,
+            parking: propertyDetails.parking ? parseInt(propertyDetails.parking) : null,
+          } : null,
+          financials: financials.expectedROI || financials.rentalYield || financials.appreciationRate ? {
+            expectedROI: financials.expectedROI ? parseFloat(financials.expectedROI) : null,
+            rentalYield: financials.rentalYield ? parseFloat(financials.rentalYield) : null,
+            appreciationRate: financials.appreciationRate ? parseFloat(financials.appreciationRate) : null,
+          } : null,
+          token_info: {
+            maxSupply: formData.maxSupply,
+            pricePerToken: formData.pricePerToken,
+          },
+          images: images, // IMAGES ARE SAVED HERE!
+        }
+
+        // Create property in Supabase with all metadata
+        await createSupabaseProperty(propertyData as any)
+      }
 
       // Clear form on success
       setFormData({

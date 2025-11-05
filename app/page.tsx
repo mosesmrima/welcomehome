@@ -17,16 +17,8 @@ import { AuthModal } from '@/app/components/auth/auth-modal'
 import { useAuth } from '@/app/components/providers/auth-provider'
 import Image from 'next/image'
 
-// Property images mapping
-const PROPERTY_IMAGES = [
-  '/images/properties/house-1.jpg',
-  '/images/properties/house-2.jpg',
-  '/images/properties/house-3.jpg',
-  '/images/properties/house-6.jpg',
-  '/images/properties/house-7.jpg',
-  '/images/properties/house-9.jpg',
-  '/images/properties/house-10.jpg',
-]
+// Default placeholder image for properties without uploaded images
+const DEFAULT_PROPERTY_IMAGE = '/images/properties/placeholder.jpg'
 
 // Disable static rendering for this page
 export const dynamic = 'force-dynamic'
@@ -44,7 +36,7 @@ function PropertyCard({ property }: PropertyCardProps) {
   // Use image from Supabase or fallback to placeholder
   const propertyImage = (property.images && property.images.length > 0)
     ? property.images[property.featured_image_index || 0]
-    : PROPERTY_IMAGES[Number(property.blockchainId) % PROPERTY_IMAGES.length]
+    : DEFAULT_PROPERTY_IMAGE
 
   // Symbol is auto-generated as PROP{id}
   const symbol = `PROP${property.blockchainId}`

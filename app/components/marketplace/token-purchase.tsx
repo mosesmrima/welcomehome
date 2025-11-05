@@ -13,16 +13,8 @@ import { Coins, TrendingUp, AlertCircle, CheckCircle, Building2, FileText } from
 import { PropertyInfo } from '@/app/lib/web3/hooks/use-property-factory'
 import Image from 'next/image'
 
-// Property images mapping
-const PROPERTY_IMAGES = [
-  '/images/properties/house-1.jpg',
-  '/images/properties/house-2.jpg',
-  '/images/properties/house-3.jpg',
-  '/images/properties/house-6.jpg',
-  '/images/properties/house-7.jpg',
-  '/images/properties/house-9.jpg',
-  '/images/properties/house-10.jpg',
-]
+// Default placeholder image for properties without uploaded images
+const DEFAULT_PROPERTY_IMAGE = '/images/properties/placeholder.jpg'
 
 interface TokenPurchaseProps {
   selectedProperty?: PropertyInfo | null
@@ -162,7 +154,10 @@ export function TokenPurchase({ selectedProperty }: TokenPurchaseProps) {
     )
   }
 
-  const propertyImage = PROPERTY_IMAGES[selectedProperty.id % PROPERTY_IMAGES.length]
+  // Use real images from database or fallback to placeholder
+  const propertyImage = (selectedProperty as any).images && (selectedProperty as any).images.length > 0
+    ? (selectedProperty as any).images[0]
+    : DEFAULT_PROPERTY_IMAGE
 
   return (
     <Card className="p-0 overflow-hidden">
