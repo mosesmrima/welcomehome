@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect as React_useEffect } from "react"
+import * as React from "react"
 import { Card } from "@/app/components/ui/card"
 import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
@@ -444,9 +445,41 @@ function RevenueManagement() {
 }
 
 function PropertiesList() {
-  const { properties, isLoading, propertyCount, refetchPropertyCount } = usePropertyFactory()
+  const { properties: blockchainProps, isLoading: blockchainLoading, propertyCount, refetchPropertyCount } = usePropertyFactory()
+  const { listProperties, deleteProperty, isLoading: dbLoading } = usePropertyManagement()
+  const [dbProperties, setDbProperties] = useState<any[]>([])
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [selectedProperty, setSelectedProperty] = useState<any | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
 
-  if (isLoading) {
+  // Fetch database properties on mount
+  React.useEffect(() => {
+    const fetchDbProperties = async () => {
+      const props = await listProperties()
+      setDbProperties(props)
+    }
+    fetchDbProperties()
+  }, [listProperties])
+
+  const handleDelete = async (contractAddress: string) => {
+    if (!confirm('Are you sure you want to delete this property? This action cannot be undone.')) return
+
+    setIsDeleting(true)
+    const success = await deleteProperty(contractAddress)
+    if (success) {
+      // Refresh list
+      const props = await listProperties()
+      setDbProperties(props)
+    }
+    setIsDeleting(false)
+  }
+
+  const handleEdit = (property: any) => {
+    setSelectedProperty(property)
+    setShowEditModal(true)
+  }
+
+  if (blockchainLoading || dbLoading) {
     return (
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
@@ -461,7 +494,9 @@ function PropertiesList() {
     )
   }
 
-  if (properties.length === 0) {
+  const allProperties = [...blockchainProps, ...dbProperties]
+
+  if (allProperties.length === 0) {
     return (
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
@@ -478,60 +513,117 @@ function PropertiesList() {
   }
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-semibold">Created Properties</h3>
-          <p className="text-sm text-gray-600">{propertyCount} {propertyCount === 1 ? 'property' : 'properties'} total</p>
+    <>
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold">Created Properties</h3>
+            <p className="text-sm text-gray-600">{allProperties.length} {allProperties.length === 1 ? 'property' : 'properties'} total</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={async () => {
+            refetchPropertyCount()
+            const props = await listProperties()
+            setDbProperties(props)
+          }}>
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetchPropertyCount()}>
-          <CheckCircle className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
 
-      <div className="space-y-3">
-        {properties.map((property) => (
-          <div key={property.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Building2 className="h-4 w-4 text-gray-600" />
-                  <h4 className="font-medium">{property.name}</h4>
-                  <Badge variant={property.isActive ? "default" : "secondary"} className="text-xs">
-                    {property.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">ID:</span>
-                    <span className="ml-1 font-medium">#{property.id}</span>
+        <div className="space-y-3">
+          {allProperties.map((property, index) => (
+            <div key={property.id || index} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 className="h-4 w-4 text-gray-600" />
+                    <h4 className="font-medium">{property.name}</h4>
+                    <Badge variant={property.isActive || property.is_active ? "default" : "secondary"} className="text-xs">
+                      {property.isActive || property.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Total Supply:</span>
-                    <span className="ml-1 font-medium">{formatUnits(property.totalSupply, 18)}</span>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">ID:</span>
+                      <span className="ml-1 font-medium">#{property.id || property.property_id || 'N/A'}</span>
+                    </div>
+                    {property.totalSupply && (
+                      <div>
+                        <span className="text-gray-600">Total Supply:</span>
+                        <span className="ml-1 font-medium">{formatUnits(property.totalSupply, 18)}</span>
+                      </div>
+                    )}
+                    {property.pricePerToken && (
+                      <div>
+                        <span className="text-gray-600">Price:</span>
+                        <span className="ml-1 font-medium">{formatUnits(property.pricePerToken, 18)} HBAR</span>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-gray-600">Created:</span>
+                      <span className="ml-1 font-medium">
+                        {property.createdAt
+                          ? new Date(Number(property.createdAt) * 1000).toLocaleDateString()
+                          : property.created_at
+                            ? new Date(property.created_at).toLocaleDateString()
+                            : 'N/A'
+                        }
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Price:</span>
-                    <span className="ml-1 font-medium">{formatUnits(property.pricePerToken, 18)} HBAR</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Created:</span>
-                    <span className="ml-1 font-medium">
-                      {new Date(Number(property.createdAt) * 1000).toLocaleDateString()}
+                  <div className="mt-2 text-xs text-gray-500">
+                    <span>Contract: </span>
+                    <span className="font-mono">
+                      {(property.tokenContract || property.contract_address || 'N/A').slice(0, 10)}...
+                      {(property.tokenContract || property.contract_address || 'N/A').slice(-8)}
                     </span>
                   </div>
                 </div>
-                <div className="mt-2 text-xs text-gray-500">
-                  <span>Token Contract: </span>
-                  <span className="font-mono">{property.tokenContract.slice(0, 10)}...{property.tokenContract.slice(-8)}</span>
-                </div>
+
+                {/* Edit/Delete buttons for DB properties */}
+                {property.contract_address && (
+                  <div className="flex gap-2 ml-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(property)}
+                      disabled={isDeleting}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(property.contract_address)}
+                      disabled={isDeleting}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-    </Card>
+          ))}
+        </div>
+      </Card>
+
+      {/* Edit Modal */}
+      {showEditModal && selectedProperty && (
+        <EditPropertyModal
+          property={selectedProperty}
+          onClose={() => {
+            setShowEditModal(false)
+            setSelectedProperty(null)
+          }}
+          onSuccess={async () => {
+            const props = await listProperties()
+            setDbProperties(props)
+            setShowEditModal(false)
+            setSelectedProperty(null)
+          }}
+        />
+      )}
+    </>
   )
 }
 
@@ -1266,3 +1358,101 @@ function PropertyCreation() {
     </Card>
   )
 }
+
+// Edit Property Modal Component
+function EditPropertyModal({
+  property,
+  onClose,
+  onSuccess
+}: {
+  property: any
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const { updateProperty, isLoading } = usePropertyManagement()
+  const [formData, setFormData] = useState({
+    name: property.name || "",
+    description: property.description || "",
+    property_type: property.property_type || "",
+    size_value: property.size_value || "",
+    status: property.status || "",
+  })
+  const [images, setImages] = useState<string[]>(property.images || [])
+
+  const handleUpdate = async () => {
+    const success = await updateProperty(property.contract_address, formData)
+    if (success) {
+      onSuccess()
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold">Edit Property</h3>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            ✕
+          </Button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="edit-name">Property Name</Label>
+            <Input
+              id="edit-name"
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-description">Description</Label>
+            <Textarea
+              id="edit-description"
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-type">Property Type</Label>
+            <select
+              id="edit-type"
+              value={formData.property_type}
+              onChange={(e) => setFormData({...formData, property_type: e.target.value as any})}
+              className="w-full px-3 py-2 border rounded-md"
+            >
+              <option value="residential">Residential</option>
+              <option value="commercial">Commercial</option>
+              <option value="industrial">Industrial</option>
+              <option value="land">Land</option>
+              <option value="mixed_use">Mixed Use</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Property Images</Label>
+            <ImageUploader
+              maxFiles={10}
+              onImagesChange={setImages}
+              initialImages={images}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="flex gap-3 justify-end pt-4">
+            <Button variant="outline" onClick={onClose} disabled={isLoading}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdate} disabled={isLoading}>
+              {isLoading ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
