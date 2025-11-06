@@ -518,7 +518,12 @@ function PropertiesList() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold">Created Properties</h3>
-            <p className="text-sm text-gray-600">{allProperties.length} {allProperties.length === 1 ? 'property' : 'properties'} total</p>
+            <p className="text-sm text-gray-600">
+              {allProperties.length} {allProperties.length === 1 ? 'property' : 'properties'} total
+              {dbProperties.length > 0 && (
+                <span className="ml-2 text-green-600">({dbProperties.length} with database records - editable)</span>
+              )}
+            </p>
           </div>
           <Button variant="outline" size="sm" onClick={async () => {
             refetchPropertyCount()
@@ -530,9 +535,23 @@ function PropertiesList() {
           </Button>
         </div>
 
+        {dbProperties.length === 0 && blockchainProps.length > 0 && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">Properties shown are blockchain-only (not editable)</p>
+                <p>To enable Edit/Delete functionality, create a new property using the form above. New properties will be saved to both blockchain and database.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-3">
-          {allProperties.map((property, index) => (
-            <div key={property.id || index} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+          {allProperties.map((property, index) => {
+            const isDbProperty = !!property.contract_address
+            return (
+            <div key={property.id || index} className={`border rounded-lg p-4 transition-colors ${isDbProperty ? 'border-green-200 bg-green-50/30 hover:bg-green-50' : 'hover:bg-gray-50'}`}>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -541,6 +560,16 @@ function PropertiesList() {
                     <Badge variant={property.isActive || property.is_active ? "default" : "secondary"} className="text-xs">
                       {property.isActive || property.is_active ? 'Active' : 'Inactive'}
                     </Badge>
+                    {isDbProperty && (
+                      <Badge className="text-xs bg-green-100 text-green-800 border-green-300">
+                        ✓ Editable
+                      </Badge>
+                    )}
+                    {!isDbProperty && (
+                      <Badge variant="outline" className="text-xs text-gray-600">
+                        Blockchain Only
+                      </Badge>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
@@ -581,15 +610,16 @@ function PropertiesList() {
                 </div>
 
                 {/* Edit/Delete buttons for DB properties */}
-                {property.contract_address && (
+                {isDbProperty ? (
                   <div className="flex gap-2 ml-4">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(property)}
                       disabled={isDeleting}
+                      className="bg-white hover:bg-green-50"
                     >
-                      Edit
+                      ✏️ Edit
                     </Button>
                     <Button
                       variant="destructive"
@@ -597,13 +627,19 @@ function PropertiesList() {
                       onClick={() => handleDelete(property.contract_address)}
                       disabled={isDeleting}
                     >
-                      Delete
+                      🗑️ Delete
                     </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 ml-4">
+                    <div className="text-xs text-gray-500 italic px-3 py-2">
+                      Create new property<br />to enable editing
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-          ))}
+          )})}
         </div>
       </Card>
 
@@ -1422,7 +1458,11 @@ function EditPropertyModal({
   const [images, setImages] = useState<string[]>(property.images || [])
 
   const handleUpdate = async () => {
-    const success = await updateProperty(property.contract_address, formData)
+    const updateData = {
+      ...formData,
+      images: images, // Include updated images
+    }
+    const success = await updateProperty(property.contract_address, updateData)
     if (success) {
       onSuccess()
     }
