@@ -939,24 +939,12 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
       console.log('🖼️ Images to save:', images)
 
       // Step 1: ALWAYS save to Supabase database first (metadata is source of truth)
-      const propertyData = {
-        contract_address: contractAddress,
-        name: formData.name,
-        description: formData.description,
-        property_type: formData.propertyType,
-        status: formData.status,
-        size_value: formData.sizeValue ? parseFloat(formData.sizeValue) : null,
-        size_unit: formData.sizeUnit,
-        location: location.address || location.city ? {
-          address: location.address,
-          city: location.city,
-          country: location.country,
-          coordinates: location.lat && location.lng ? {
-            lat: parseFloat(location.lat),
-            lng: parseFloat(location.lng)
-          } : null
-        } : null,
-        amenities: amenities,
+      // NOTE: Database schema only has these columns:
+      // - contract_address, name, description, location, images, documents, metadata,
+      //   property_type, size_value, size_unit, status, amenities, featured_image_index
+
+      // Prepare metadata object for extra fields
+      const metadata = {
         property_details: showPropertyDetails ? {
           bedrooms: propertyDetails.bedrooms ? parseInt(propertyDetails.bedrooms) : null,
           bathrooms: propertyDetails.bathrooms ? parseInt(propertyDetails.bathrooms) : null,
@@ -973,10 +961,32 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
           maxSupply: formData.maxSupply,
           pricePerToken: formData.pricePerToken,
         },
-        images: images, // Real uploaded images saved here
+      }
+
+      const propertyData = {
+        contract_address: contractAddress,
+        name: formData.name,
+        description: formData.description || null,
+        property_type: formData.propertyType,
+        status: formData.status,
+        size_value: formData.sizeValue ? parseFloat(formData.sizeValue) : null,
+        size_unit: formData.sizeUnit,
+        location: location.address || location.city ? {
+          address: location.address,
+          city: location.city,
+          country: location.country,
+          coordinates: location.lat && location.lng ? {
+            lat: parseFloat(location.lat),
+            lng: parseFloat(location.lng)
+          } : null
+        } : null,
+        amenities: amenities.length > 0 ? amenities : null,
+        images: images.length > 0 ? images : null,
+        metadata: metadata, // Store extra fields here
       }
 
       console.log('💾 Saving to Supabase database...')
+      console.log('📦 Property data:', propertyData)
       const supabaseResult = await createSupabaseProperty(propertyData as any)
 
       if (supabaseResult) {
