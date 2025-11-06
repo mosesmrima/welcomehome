@@ -7,6 +7,17 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Allow images from Supabase storage
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'jplicanfiibpkfqttgmi.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
   // Explicitly pass environment variables to client
   env: {
     ACCESS_CONTROL_ADDRESS: process.env.ACCESS_CONTROL_ADDRESS,
