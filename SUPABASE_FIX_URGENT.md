@@ -38,7 +38,51 @@ This is why:
    - `Project URL` (e.g., `https://xxxxx.supabase.co`)
    - `anon public` key (starts with `eyJ...`)
 
-### Step 3: Run Database Migrations on New Project
+### Step 3: Fix RLS Policies (CRITICAL - NEW ISSUE)
+
+**IMPORTANT**: Even after resuming/creating the Supabase project, you need to fix RLS policies!
+
+**Error you're seeing:**
+```
+Error: new row violates row-level security policy for table "properties"
+Code: 42501 (Unauthorized)
+```
+
+**Quick Fix - Run this SQL:**
+
+1. Go to **Supabase Dashboard** → **SQL Editor**: https://supabase.com/dashboard/project/jplicanfiibpkfqttgmi/sql/new
+2. Copy and paste this SQL:
+
+```sql
+-- Fix RLS policies for properties table
+ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
+
+-- Drop old policies if they exist
+DROP POLICY IF EXISTS "Allow public read access to properties" ON properties;
+DROP POLICY IF EXISTS "Allow public insert to properties" ON properties;
+DROP POLICY IF EXISTS "Allow public update to properties" ON properties;
+DROP POLICY IF EXISTS "Allow public delete to properties" ON properties;
+
+-- Create permissive PUBLIC policies (wallet-based auth)
+CREATE POLICY "Allow public read access to properties"
+ON properties FOR SELECT TO public USING (true);
+
+CREATE POLICY "Allow public insert to properties"
+ON properties FOR INSERT TO public WITH CHECK (true);
+
+CREATE POLICY "Allow public update to properties"
+ON properties FOR UPDATE TO public USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow public delete to properties"
+ON properties FOR DELETE TO public USING (true);
+```
+
+3. Click **Run** (or Ctrl/Cmd + Enter)
+4. You should see: "Success. No rows returned"
+
+**Why PUBLIC policies?** This app uses wallet-based authentication (MetaMask/WalletConnect), not traditional email/password. Users connect via the anon key, so Supabase sees them as "public". Application-level checks enforce admin privileges.
+
+### Step 4: Run Database Migrations on New Project
 
 If you created a new project, you need to set up the database schema:
 
