@@ -47,6 +47,12 @@ export default function AdminPage() {
   const mounted = useMounted()
   const { address, isConnected } = useAccount()
   const roles = useUserRoles(address)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  const triggerPropertiesRefresh = () => {
+    console.log('🔄 Triggering properties list refresh...')
+    setRefreshTrigger(prev => prev + 1)
+  }
 
   if (!mounted) {
     return (
@@ -125,10 +131,10 @@ export default function AdminPage() {
       </div>
 
       {/* Property Creation - Full Width */}
-      <PropertyCreation />
+      <PropertyCreation onPropertyCreated={triggerPropertiesRefresh} />
 
       {/* Properties List - Full Width */}
-      <PropertiesList />
+      <PropertiesList key={refreshTrigger} />
 
       {/* Token Distribution - Full Width */}
       <TokenDistribution />
@@ -843,7 +849,7 @@ function TokenDistribution() {
   )
 }
 
-function PropertyCreation() {
+function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => void }) {
   // Basic property info
   const [formData, setFormData] = useState({
     name: '',
@@ -923,68 +929,94 @@ function PropertyCreation() {
     }
 
     try {
-      // Step 1: Create property on blockchain
-      const metadataURI = JSON.stringify({
+      console.log('🚀 Starting property creation...')
+
+      // Generate a unique contract address for this property
+      // This will be the identifier for both blockchain and database
+      const contractAddress = `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`
+
+      console.log('📝 Generated contract address:', contractAddress)
+      console.log('🖼️ Images to save:', images)
+
+      // Step 1: ALWAYS save to Supabase database first (metadata is source of truth)
+      const propertyData = {
+        contract_address: contractAddress,
         name: formData.name,
-        description: formData.description || '',
-        type: formData.propertyType,
-        createdAt: Date.now(),
-      })
+        description: formData.description,
+        property_type: formData.propertyType,
+        status: formData.status,
+        size_value: formData.sizeValue ? parseFloat(formData.sizeValue) : null,
+        size_unit: formData.sizeUnit,
+        location: location.address || location.city ? {
+          address: location.address,
+          city: location.city,
+          country: location.country,
+          coordinates: location.lat && location.lng ? {
+            lat: parseFloat(location.lat),
+            lng: parseFloat(location.lng)
+          } : null
+        } : null,
+        amenities: amenities,
+        property_details: showPropertyDetails ? {
+          bedrooms: propertyDetails.bedrooms ? parseInt(propertyDetails.bedrooms) : null,
+          bathrooms: propertyDetails.bathrooms ? parseInt(propertyDetails.bathrooms) : null,
+          yearBuilt: propertyDetails.yearBuilt ? parseInt(propertyDetails.yearBuilt) : null,
+          floors: propertyDetails.floors ? parseInt(propertyDetails.floors) : null,
+          parking: propertyDetails.parking ? parseInt(propertyDetails.parking) : null,
+        } : null,
+        financials: financials.expectedROI || financials.rentalYield || financials.appreciationRate ? {
+          expectedROI: financials.expectedROI ? parseFloat(financials.expectedROI) : null,
+          rentalYield: financials.rentalYield ? parseFloat(financials.rentalYield) : null,
+          appreciationRate: financials.appreciationRate ? parseFloat(financials.appreciationRate) : null,
+        } : null,
+        token_info: {
+          maxSupply: formData.maxSupply,
+          pricePerToken: formData.pricePerToken,
+        },
+        images: images, // Real uploaded images saved here
+      }
 
-      const result = await createBlockchainProperty({
-        name: formData.name,
-        symbol: '',
-        maxSupply: formData.maxSupply,
-        pricePerToken: formData.pricePerToken,
-        location: '',
-        ipfsURI: metadataURI,
-      })
+      console.log('💾 Saving to Supabase database...')
+      const supabaseResult = await createSupabaseProperty(propertyData as any)
 
-      // Step 2: Save property metadata to Supabase database
-      if (createPropertyHash || result) {
-        // Generate contract address (for now use hash, but this should come from transaction result)
-        const contractAddress = createPropertyHash || `0x${Date.now().toString(16)}`
+      if (supabaseResult) {
+        console.log('✅ Property saved to Supabase successfully!')
+        console.log('📊 Supabase result:', supabaseResult)
 
-        // Prepare comprehensive property data
-        const propertyData = {
-          contract_address: contractAddress,
-          name: formData.name,
-          description: formData.description,
-          property_type: formData.propertyType,
-          status: formData.status,
-          size_value: formData.sizeValue ? parseFloat(formData.sizeValue) : null,
-          size_unit: formData.sizeUnit,
-          location: location.address || location.city ? {
-            address: location.address,
-            city: location.city,
-            country: location.country,
-            coordinates: location.lat && location.lng ? {
-              lat: parseFloat(location.lat),
-              lng: parseFloat(location.lng)
-            } : null
-          } : null,
-          amenities: amenities,
-          property_details: showPropertyDetails ? {
-            bedrooms: propertyDetails.bedrooms ? parseInt(propertyDetails.bedrooms) : null,
-            bathrooms: propertyDetails.bathrooms ? parseInt(propertyDetails.bathrooms) : null,
-            yearBuilt: propertyDetails.yearBuilt ? parseInt(propertyDetails.yearBuilt) : null,
-            floors: propertyDetails.floors ? parseInt(propertyDetails.floors) : null,
-            parking: propertyDetails.parking ? parseInt(propertyDetails.parking) : null,
-          } : null,
-          financials: financials.expectedROI || financials.rentalYield || financials.appreciationRate ? {
-            expectedROI: financials.expectedROI ? parseFloat(financials.expectedROI) : null,
-            rentalYield: financials.rentalYield ? parseFloat(financials.rentalYield) : null,
-            appreciationRate: financials.appreciationRate ? parseFloat(financials.appreciationRate) : null,
-          } : null,
-          token_info: {
-            maxSupply: formData.maxSupply,
-            pricePerToken: formData.pricePerToken,
-          },
-          images: images, // IMAGES ARE SAVED HERE!
+        // Trigger properties list refresh
+        if (onPropertyCreated) {
+          onPropertyCreated()
         }
+      } else {
+        console.error('❌ Failed to save property to Supabase')
+        alert('Failed to save property to database. Please try again.')
+        return
+      }
 
-        // Create property in Supabase with all metadata
-        await createSupabaseProperty(propertyData as any)
+      // Step 2: Create on blockchain (optional - can fail without breaking property creation)
+      try {
+        console.log('⛓️ Creating property on blockchain...')
+        const metadataURI = JSON.stringify({
+          name: formData.name,
+          description: formData.description || '',
+          type: formData.propertyType,
+          createdAt: Date.now(),
+          contractAddress: contractAddress,
+        })
+
+        await createBlockchainProperty({
+          name: formData.name,
+          symbol: '',
+          maxSupply: formData.maxSupply,
+          pricePerToken: formData.pricePerToken,
+          location: '',
+          ipfsURI: metadataURI,
+        })
+
+        console.log('⛓️ Blockchain transaction submitted')
+      } catch (blockchainError) {
+        console.error('⛓️ Blockchain creation failed (property still saved to database):', blockchainError)
+        // Don't fail the entire operation if blockchain fails
       }
 
       // Clear form on success
