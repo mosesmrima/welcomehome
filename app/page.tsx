@@ -47,7 +47,7 @@ function PropertyCard({ property }: PropertyCardProps) {
     : property.description?.substring(0, 50)
 
   const handleClick = () => {
-    router.push(`/property/${property.contract_address}`)
+    router.push(`/property/${property.contract_address.toLowerCase()}`)
   }
 
   return (

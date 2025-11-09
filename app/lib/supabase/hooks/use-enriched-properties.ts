@@ -144,6 +144,9 @@ export function useEnrichedProperties() {
 
 // Hook for getting a single enriched property
 export function useEnrichedProperty(contractAddress: string) {
+  // Normalize the contract address to lowercase for consistent queries
+  const normalizedAddress = contractAddress?.toLowerCase()
+
   const [property, setProperty] = useState<EnrichedPropertyDisplay | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -152,7 +155,7 @@ export function useEnrichedProperty(contractAddress: string) {
   const { properties: blockchainProperties } = usePropertyFactory()
 
   const fetchProperty = useCallback(async () => {
-    if (!contractAddress) {
+    if (!normalizedAddress) {
       setProperty(null)
       setIsLoading(false)
       return
@@ -164,7 +167,7 @@ export function useEnrichedProperty(contractAddress: string) {
     try {
       // Find blockchain property
       const blockchainProp = blockchainProperties.find(
-        p => p.tokenContract.toLowerCase() === contractAddress.toLowerCase()
+        p => p.tokenContract.toLowerCase() === normalizedAddress
       )
 
       if (!blockchainProp) {
@@ -172,7 +175,7 @@ export function useEnrichedProperty(contractAddress: string) {
       }
 
       // Fetch Supabase data
-      const supabaseData = await getSupabaseProperty(contractAddress)
+      const supabaseData = await getSupabaseProperty(normalizedAddress)
 
       // Merge data
       const totalSupplyFormatted = formatUnits(blockchainProp.totalSupply, 18)
@@ -218,7 +221,7 @@ export function useEnrichedProperty(contractAddress: string) {
     } finally {
       setIsLoading(false)
     }
-  }, [contractAddress, blockchainProperties, getSupabaseProperty])
+  }, [normalizedAddress, blockchainProperties, getSupabaseProperty])
 
   useEffect(() => {
     fetchProperty()

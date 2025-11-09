@@ -123,7 +123,7 @@ export function usePropertyManagement() {
         const { data: existingProperty } = await supabase
           .from('properties')
           .select('images')
-          .eq('contract_address', contractAddress)
+          .eq('contract_address', contractAddress.toLowerCase())
           .single()
 
         if (existingProperty?.images) {
@@ -158,7 +158,7 @@ export function usePropertyManagement() {
           ...updates,
           images: imageUrls.length > 0 ? imageUrls : null,
         })
-        .eq('contract_address', contractAddress)
+        .eq('contract_address', contractAddress.toLowerCase())
         .select()
         .single()
 
@@ -189,7 +189,7 @@ export function usePropertyManagement() {
       const { data: property, error } = await supabase
         .from('properties')
         .select('*')
-        .eq('contract_address', contractAddress)
+        .eq('contract_address', contractAddress.toLowerCase())
         .single()
 
       if (error) throw error
@@ -239,7 +239,7 @@ export function usePropertyManagement() {
       const { error } = await supabase
         .from('properties')
         .delete()
-        .eq('contract_address', contractAddress)
+        .eq('contract_address', contractAddress.toLowerCase())
 
       if (error) throw error
 

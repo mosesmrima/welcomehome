@@ -891,6 +891,7 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
   const [amenities, setAmenities] = useState<string[]>([])
   const [realContractAddress, setRealContractAddress] = useState<string | null>(null)
   const [blockchainCreatedData, setBlockchainCreatedData] = useState<any>(null)
+  const [isSavingToSupabase, setIsSavingToSupabase] = useState(false)
 
   const {
     createProperty: createBlockchainProperty,
@@ -935,8 +936,9 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
 
   // Save to Supabase after getting real contract address
   useEffect(() => {
-    if (realContractAddress && blockchainCreatedData) {
+    if (realContractAddress && blockchainCreatedData && !isSavingToSupabase) {
       const saveToSupabase = async () => {
+        setIsSavingToSupabase(true)
         console.log('💾 Saving to Supabase with REAL contract address:', realContractAddress)
 
         const { formData, propertyDetails, location, financials, images, amenities, showPropertyDetails } = blockchainCreatedData
@@ -962,7 +964,7 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
         }
 
         const propertyData = {
-          contract_address: realContractAddress, // USE REAL ADDRESS!
+          contract_address: realContractAddress.toLowerCase(), // USE REAL ADDRESS (normalized to lowercase)!
           name: formData.name,
           description: formData.description || null,
           property_type: formData.propertyType,
@@ -1024,6 +1026,7 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
           setAmenities([])
           setRealContractAddress(null)
           setBlockchainCreatedData(null)
+          setIsSavingToSupabase(false)
 
           // Trigger refresh
           if (onPropertyCreated) {
@@ -1032,12 +1035,13 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
         } else {
           console.error('❌ Failed to save to Supabase')
           alert('Property created on blockchain but failed to save to database. Contract address: ' + realContractAddress)
+          setIsSavingToSupabase(false)
         }
       }
 
       saveToSupabase()
     }
-  }, [realContractAddress, blockchainCreatedData, createSupabaseProperty, onPropertyCreated])
+  }, [realContractAddress, blockchainCreatedData, createSupabaseProperty, onPropertyCreated, isSavingToSupabase])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target

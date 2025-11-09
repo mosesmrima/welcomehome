@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 
 export default function PropertyDetailsPage() {
   const params = useParams()
-  const contractAddress = params.id as string // Now expects contract address instead of numeric ID
+  const contractAddress = (params.id as string).toLowerCase() // Normalize to lowercase for consistent database queries
 
   const { property, isLoading, error, refetch } = useEnrichedProperty(contractAddress)
 

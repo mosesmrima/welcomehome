@@ -33,7 +33,7 @@ function PropertyCard({ property, onViewDetails }: PropertyCardProps) {
   return (
     <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden group">
       {/* Property Image */}
-      <Link href={`/property/${property.id}`}>
+      <Link href={`/property/${property.tokenContract.toLowerCase()}`}>
         <div className="relative h-48 overflow-hidden">
           <Image
             src={propertyImage}
@@ -114,7 +114,7 @@ function PropertyCard({ property, onViewDetails }: PropertyCardProps) {
         </div>
 
         <div className="flex gap-2">
-          <Link href={`/property/${property.id}`} className="flex-1">
+          <Link href={`/property/${property.tokenContract.toLowerCase()}`} className="flex-1">
             <Button className="w-full" variant="default">
               View Details
             </Button>
