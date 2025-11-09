@@ -889,6 +889,8 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
 
   const [images, setImages] = useState<string[]>([])
   const [amenities, setAmenities] = useState<string[]>([])
+  const [realContractAddress, setRealContractAddress] = useState<string | null>(null)
+  const [blockchainCreatedData, setBlockchainCreatedData] = useState<any>(null)
 
   const {
     createProperty: createBlockchainProperty,
@@ -897,9 +899,141 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
     isCreateSuccess,
     createPropertyError,
     createPropertyHash,
+    createPropertyReceipt,
+    extractTokenContractFromReceipt,
   } = usePropertyFactory()
 
   const { createProperty: createSupabaseProperty } = usePropertyManagement()
+
+  // Extract real contract address from blockchain receipt
+  React.useEffect(() => {
+    if (isCreateSuccess && createPropertyReceipt) {
+      const tokenContract = extractTokenContractFromReceipt(createPropertyReceipt)
+      if (tokenContract) {
+        console.log('✅ Extracted real token contract address:', tokenContract)
+        setRealContractAddress(tokenContract)
+
+        // Store the form data for later Supabase save
+        setBlockchainCreatedData({
+          formData: { ...formData },
+          propertyDetails: { ...propertyDetails },
+          location: { ...location },
+          financials: { ...financials },
+          images: [...images],
+          amenities: [...amenities],
+        })
+      } else {
+        console.error('❌ Failed to extract contract address from receipt')
+        alert('Property created on blockchain but failed to extract contract address. Please check console for details.')
+      }
+    }
+  }, [isCreateSuccess, createPropertyReceipt, extractTokenContractFromReceipt, formData, propertyDetails, location, financials, images, amenities])
+
+  // Save to Supabase after getting real contract address
+  React.useEffect(() => {
+    if (realContractAddress && blockchainCreatedData) {
+      const saveToSupabase = async () => {
+        console.log('💾 Saving to Supabase with REAL contract address:', realContractAddress)
+
+        const { formData, propertyDetails, location, financials, images, amenities } = blockchainCreatedData
+
+        // Prepare metadata
+        const metadata = {
+          property_details: showPropertyDetails ? {
+            bedrooms: propertyDetails.bedrooms ? parseInt(propertyDetails.bedrooms) : null,
+            bathrooms: propertyDetails.bathrooms ? parseInt(propertyDetails.bathrooms) : null,
+            yearBuilt: propertyDetails.yearBuilt ? parseInt(propertyDetails.yearBuilt) : null,
+            floors: propertyDetails.floors ? parseInt(propertyDetails.floors) : null,
+            parking: propertyDetails.parking ? parseInt(propertyDetails.parking) : null,
+          } : null,
+          financials: financials.expectedROI || financials.rentalYield || financials.appreciationRate ? {
+            expectedROI: financials.expectedROI ? parseFloat(financials.expectedROI) : null,
+            rentalYield: financials.rentalYield ? parseFloat(financials.rentalYield) : null,
+            appreciationRate: financials.appreciationRate ? parseFloat(financials.appreciationRate) : null,
+          } : null,
+          token_info: {
+            maxSupply: formData.maxSupply,
+            pricePerToken: formData.pricePerToken,
+          },
+        }
+
+        const propertyData = {
+          contract_address: realContractAddress, // USE REAL ADDRESS!
+          name: formData.name,
+          description: formData.description || null,
+          property_type: formData.propertyType,
+          status: formData.status,
+          size_value: formData.sizeValue ? parseFloat(formData.sizeValue) : null,
+          size_unit: formData.sizeUnit,
+          location: location.address || location.city ? {
+            address: location.address,
+            city: location.city,
+            country: location.country,
+            coordinates: location.lat && location.lng ? {
+              lat: parseFloat(location.lat),
+              lng: parseFloat(location.lng)
+            } : null
+          } : null,
+          amenities: amenities.length > 0 ? amenities : null,
+          images: images.length > 0 ? images : null, // Images now linked to REAL address
+          metadata: metadata,
+        }
+
+        console.log('📦 Supabase data:', JSON.stringify(propertyData, null, 2))
+        const supabaseResult = await createSupabaseProperty(propertyData as any)
+
+        if (supabaseResult) {
+          console.log('✅ Property saved to Supabase successfully!')
+          alert('Property created successfully on blockchain and saved to database!')
+
+          // Clear form and reset state
+          setFormData({
+            name: '',
+            description: '',
+            maxSupply: '',
+            pricePerToken: '',
+            propertyType: 'residential',
+            sizeValue: '',
+            sizeUnit: 'sqm',
+            status: 'available',
+          })
+          setPropertyDetails({
+            bedrooms: '',
+            bathrooms: '',
+            yearBuilt: '',
+            floors: '',
+            parking: '',
+          })
+          setLocation({
+            address: '',
+            city: '',
+            country: '',
+            lat: '',
+            lng: '',
+          })
+          setFinancials({
+            expectedROI: '',
+            rentalYield: '',
+            appreciationRate: '',
+          })
+          setImages([])
+          setAmenities([])
+          setRealContractAddress(null)
+          setBlockchainCreatedData(null)
+
+          // Trigger refresh
+          if (onPropertyCreated) {
+            onPropertyCreated()
+          }
+        } else {
+          console.error('❌ Failed to save to Supabase')
+          alert('Property created on blockchain but failed to save to database. Contract address: ' + realContractAddress)
+        }
+      }
+
+      saveToSupabase()
+    }
+  }, [realContractAddress, blockchainCreatedData, createSupabaseProperty, onPropertyCreated, showPropertyDetails])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -929,148 +1063,48 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
     }
 
     try {
-      console.log('🚀 Starting property creation...')
-
-      // Generate a unique contract address for this property
-      // This will be the identifier for both blockchain and database
-      const contractAddress = `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`
-
-      console.log('📝 Generated contract address:', contractAddress)
+      console.log('🚀 Starting BLOCKCHAIN-FIRST property creation...')
       console.log('🖼️ Images to save:', images)
       console.log('🖼️ Number of images:', images.length)
 
-      // Log each image URL for debugging
-      images.forEach((url, index) => {
-        console.log(`   Image ${index + 1}: ${url}`)
-      })
+      // ============================================================
+      // STEP 1: CREATE PROPERTY ON BLOCKCHAIN FIRST
+      // ============================================================
 
-      // Step 1: ALWAYS save to Supabase database first (metadata is source of truth)
-      // NOTE: Database schema only has these columns:
-      // - contract_address, name, description, location, images, documents, metadata,
-      //   property_type, size_value, size_unit, status, amenities, featured_image_index
-
-      // Prepare metadata object for extra fields
-      const metadata = {
-        property_details: showPropertyDetails ? {
-          bedrooms: propertyDetails.bedrooms ? parseInt(propertyDetails.bedrooms) : null,
-          bathrooms: propertyDetails.bathrooms ? parseInt(propertyDetails.bathrooms) : null,
-          yearBuilt: propertyDetails.yearBuilt ? parseInt(propertyDetails.yearBuilt) : null,
-          floors: propertyDetails.floors ? parseInt(propertyDetails.floors) : null,
-          parking: propertyDetails.parking ? parseInt(propertyDetails.parking) : null,
-        } : null,
-        financials: financials.expectedROI || financials.rentalYield || financials.appreciationRate ? {
-          expectedROI: financials.expectedROI ? parseFloat(financials.expectedROI) : null,
-          rentalYield: financials.rentalYield ? parseFloat(financials.rentalYield) : null,
-          appreciationRate: financials.appreciationRate ? parseFloat(financials.appreciationRate) : null,
-        } : null,
-        token_info: {
-          maxSupply: formData.maxSupply,
-          pricePerToken: formData.pricePerToken,
-        },
-      }
-
-      const propertyData = {
-        contract_address: contractAddress,
+      const metadataURI = JSON.stringify({
         name: formData.name,
-        description: formData.description || null,
-        property_type: formData.propertyType,
-        status: formData.status,
-        size_value: formData.sizeValue ? parseFloat(formData.sizeValue) : null,
-        size_unit: formData.sizeUnit,
-        location: location.address || location.city ? {
-          address: location.address,
-          city: location.city,
-          country: location.country,
-          coordinates: location.lat && location.lng ? {
-            lat: parseFloat(location.lat),
-            lng: parseFloat(location.lng)
-          } : null
-        } : null,
-        amenities: amenities.length > 0 ? amenities : null,
-        images: images.length > 0 ? images : null,  // This passes the images array
-        metadata: metadata, // Store extra fields here
-      }
-
-      console.log('💾 Saving to Supabase database...')
-      console.log('📦 Property data:', JSON.stringify(propertyData, null, 2))
-      console.log('📦 Images being passed:', propertyData.images)
-      const supabaseResult = await createSupabaseProperty(propertyData as any)
-
-      if (supabaseResult) {
-        console.log('✅ Property saved to Supabase successfully!')
-        console.log('📊 Supabase result:', supabaseResult)
-
-        // Trigger properties list refresh
-        if (onPropertyCreated) {
-          onPropertyCreated()
-        }
-      } else {
-        console.error('❌ Failed to save property to Supabase')
-        alert('Failed to save property to database. Please try again.')
-        return
-      }
-
-      // Step 2: Create on blockchain (optional - can fail without breaking property creation)
-      try {
-        console.log('⛓️ Creating property on blockchain...')
-        const metadataURI = JSON.stringify({
-          name: formData.name,
-          description: formData.description || '',
-          type: formData.propertyType,
-          createdAt: Date.now(),
-          contractAddress: contractAddress,
-        })
-
-        await createBlockchainProperty({
-          name: formData.name,
-          symbol: '',
-          maxSupply: formData.maxSupply,
-          pricePerToken: formData.pricePerToken,
-          location: '',
-          ipfsURI: metadataURI,
-        })
-
-        console.log('⛓️ Blockchain transaction submitted')
-      } catch (blockchainError) {
-        console.error('⛓️ Blockchain creation failed (property still saved to database):', blockchainError)
-        // Don't fail the entire operation if blockchain fails
-      }
-
-      // Clear form on success
-      setFormData({
-        name: '',
-        description: '',
-        maxSupply: '',
-        pricePerToken: '',
-        propertyType: 'residential',
-        sizeValue: '',
-        sizeUnit: 'sqm',
-        status: 'available',
+        description: formData.description || '',
+        type: formData.propertyType,
+        location: location,
+        property_details: showPropertyDetails ? propertyDetails : null,
+        financials: financials,
+        amenities: amenities,
+        createdAt: Date.now(),
       })
-      setPropertyDetails({
-        bedrooms: '',
-        bathrooms: '',
-        yearBuilt: '',
-        floors: '',
-        parking: '',
+
+      console.log('⛓️ Submitting blockchain transaction...')
+
+      await createBlockchainProperty({
+        name: formData.name,
+        symbol: '', // Auto-generated by contract as PROP{id}
+        maxSupply: formData.maxSupply,
+        pricePerToken: formData.pricePerToken,
+        location: '', // Stored in metadata
+        ipfsURI: metadataURI,
+        propertyType: formData.propertyType,
       })
-      setLocation({
-        address: '',
-        city: '',
-        country: '',
-        lat: '',
-        lng: '',
-      })
-      setFinancials({
-        expectedROI: '',
-        rentalYield: '',
-        appreciationRate: '',
-      })
-      setImages([])
-      setAmenities([])
+
+      console.log('⛓️ Blockchain transaction submitted successfully')
+      console.log('⏳ Waiting for transaction confirmation and contract address extraction...')
+
+      // The useEffect hooks will handle:
+      // 1. Extracting the real contract address from the receipt
+      // 2. Saving to Supabase with the real address
+      // 3. Clearing the form after successful save
 
     } catch (err: any) {
-      console.error('Create property error:', err)
+      console.error('❌ Blockchain transaction failed:', err)
+      alert('Failed to create property on blockchain: ' + (err.message || 'Unknown error'))
     }
   }
 
@@ -1436,11 +1470,15 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
       <div className="mt-6">
         <Button
           onClick={handleCreateProperty}
-          disabled={isCreatingProperty || isConfirmingCreate}
+          disabled={isCreatingProperty || isConfirmingCreate || (isCreateSuccess && !realContractAddress) || (realContractAddress && blockchainCreatedData)}
           className="w-full md:w-auto"
         >
           <Plus className="h-4 w-4 mr-2" />
-          {isCreatingProperty ? 'Signing Transaction...' : isConfirmingCreate ? 'Confirming...' : 'Create Property'}
+          {isCreatingProperty ? 'Signing Transaction...' :
+           isConfirmingCreate ? 'Confirming...' :
+           (isCreateSuccess && !realContractAddress) ? 'Extracting Address...' :
+           (realContractAddress && blockchainCreatedData) ? 'Saving to Database...' :
+           'Create Property'}
         </Button>
       </div>
 
@@ -1457,18 +1495,25 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
         </div>
       )}
 
-      {isCreateSuccess && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-center gap-2 text-green-800">
-            <CheckCircle className="h-5 w-5" />
+      {isCreateSuccess && !realContractAddress && (
+        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center gap-2 text-yellow-800">
+            <div className="h-5 w-5 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin" />
             <div>
-              <p className="font-medium">Property created successfully!</p>
-              <p className="text-sm mt-1">Property list will update in a moment...</p>
-              {createPropertyHash && (
-                <p className="text-xs mt-1 font-mono">
-                  Tx: {createPropertyHash.slice(0, 10)}...{createPropertyHash.slice(-8)}
-                </p>
-              )}
+              <p className="font-medium">Extracting contract address...</p>
+              <p className="text-sm mt-1">Processing blockchain event logs</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {realContractAddress && blockchainCreatedData && (
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2 text-blue-800">
+            <div className="h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <div>
+              <p className="font-medium">Saving to database...</p>
+              <p className="text-sm mt-1">Contract: {realContractAddress}</p>
             </div>
           </div>
         </div>

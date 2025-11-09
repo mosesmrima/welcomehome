@@ -6,6 +6,7 @@ import { Address, parseEther, formatEther } from 'viem'
 import { CONTRACT_ADDRESSES } from '../addresses'
 import { PROPERTY_FACTORY_ABI } from '../abi'
 import { logError } from '../error-utils'
+import { extractPropertyCreatedEvent } from '../event-utils'
 
 // =============================================================================
 // TYPES
@@ -172,6 +173,7 @@ export function usePropertyFactory() {
   const {
     isLoading: isConfirmingCreate,
     isSuccess: isCreateSuccess,
+    data: createPropertyReceipt,
   } = useWaitForTransactionReceipt({
     hash: createPropertyHash,
   })
@@ -238,6 +240,29 @@ export function usePropertyFactory() {
       }
     },
     [createPropertyWrite]
+  )
+
+  // -------------------------------------------------------------------------
+  // HELPER: Extract Token Contract from Receipt
+  // -------------------------------------------------------------------------
+  const extractTokenContractFromReceipt = useCallback(
+    (receipt: any): Address | null => {
+      if (!receipt?.logs) {
+        console.log('No logs found in transaction receipt')
+        return null
+      }
+
+      const eventData = extractPropertyCreatedEvent(receipt.logs)
+
+      if (eventData) {
+        console.log('Successfully extracted token contract:', eventData.tokenContract)
+        return eventData.tokenContract
+      }
+
+      console.log('Failed to extract token contract from receipt')
+      return null
+    },
+    []
   )
 
   // -------------------------------------------------------------------------
@@ -428,6 +453,8 @@ export function usePropertyFactory() {
     isCreateSuccess,
     createPropertyError,
     createPropertyHash,
+    createPropertyReceipt,
+    extractTokenContractFromReceipt,
 
     // Distribute tokens
     distributeTokens,
