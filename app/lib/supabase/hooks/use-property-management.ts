@@ -10,6 +10,25 @@ export interface PropertyWithImages extends Omit<Property, 'images'> {
   images: string[] // Array of public URLs
 }
 
+// Helper function to safely parse images from database
+function parseImages(images: any): string[] {
+  if (!images) return []
+  if (Array.isArray(images)) return images
+  if (typeof images === 'string') {
+    try {
+      const parsed = JSON.parse(images)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+  if (typeof images === 'object' && images !== null) {
+    // Handle case where images might be stored as object like {0: "url1", 1: "url2"}
+    return Object.values(images).filter(v => typeof v === 'string')
+  }
+  return []
+}
+
 export function usePropertyManagement() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,7 +76,7 @@ export function usePropertyManagement() {
 
       return {
         ...property,
-        images: imageUrls,
+        images: parseImages(property.images || imageUrls),
       }
     } catch (err) {
       console.error('Error creating property:', err)
@@ -90,9 +109,7 @@ export function usePropertyManagement() {
         .single()
 
       if (existingProperty?.images) {
-        imageUrls = Array.isArray(existingProperty.images)
-          ? existingProperty.images
-          : []
+        imageUrls = parseImages(existingProperty.images)
       }
 
       // Upload new images if provided
@@ -125,7 +142,7 @@ export function usePropertyManagement() {
 
       return {
         ...property,
-        images: imageUrls,
+        images: parseImages(property.images || imageUrls),
       }
     } catch (err) {
       console.error('Error updating property:', err)
@@ -151,11 +168,9 @@ export function usePropertyManagement() {
 
       if (error) throw error
 
-      const images = Array.isArray(property.images) ? property.images : []
-
       return {
         ...property,
-        images,
+        images: parseImages(property.images),
       }
     } catch (err) {
       console.error('Error fetching property:', err)
@@ -177,7 +192,7 @@ export function usePropertyManagement() {
 
       return properties.map(property => ({
         ...property,
-        images: Array.isArray(property.images) ? property.images : [],
+        images: parseImages(property.images),
       }))
     } catch (err) {
       console.error('Error listing properties:', err)

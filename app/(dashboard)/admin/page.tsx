@@ -1490,6 +1490,25 @@ function EditPropertyModal({
   onSuccess: () => void
 }) {
   const { updateProperty, isLoading } = usePropertyManagement()
+
+  // Helper to safely parse images
+  const parseImages = (images: any): string[] => {
+    if (!images) return []
+    if (Array.isArray(images)) return images
+    if (typeof images === 'string') {
+      try {
+        const parsed = JSON.parse(images)
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    }
+    if (typeof images === 'object' && images !== null) {
+      return Object.values(images).filter(v => typeof v === 'string')
+    }
+    return []
+  }
+
   const [formData, setFormData] = useState({
     name: property.name || "",
     description: property.description || "",
@@ -1497,7 +1516,7 @@ function EditPropertyModal({
     size_value: property.size_value || "",
     status: property.status || "",
   })
-  const [images, setImages] = useState<string[]>(property.images || [])
+  const [images, setImages] = useState<string[]>(parseImages(property.images))
 
   const handleUpdate = async () => {
     const updateData = {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Card } from '../ui/card'
 import { Button } from '../ui/button'
 import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react'
@@ -24,6 +24,11 @@ export function ImageUploader({
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const { upload } = useFileUpload()
+
+  // Sync internal state with prop changes (critical for edit modal)
+  useEffect(() => {
+    setImages(initialImages)
+  }, [initialImages])
 
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
