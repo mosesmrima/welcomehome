@@ -47,8 +47,16 @@ export function usePropertyManagement() {
     try {
       let imageUrls: string[] = []
 
-      // Upload images first if provided
+      // First check if images are already provided as URLs in propertyData
+      if (propertyData.images && Array.isArray(propertyData.images)) {
+        imageUrls = propertyData.images
+        console.log('🖼️ Using pre-uploaded images from propertyData:', imageUrls)
+      }
+
+      // Then handle file uploads if provided (this would override the above)
       if (imageFiles && imageFiles.length > 0) {
+        console.log('📤 Uploading new image files...')
+        imageUrls = [] // Reset to use only the new uploads
         for (let i = 0; i < imageFiles.length; i++) {
           const file = imageFiles[i]
           const timestamp = Date.now()
@@ -58,9 +66,12 @@ export function usePropertyManagement() {
           const uploadResult = await uploadFile(file, 'property-images', fileName)
           if (uploadResult.success && uploadResult.url) {
             imageUrls.push(uploadResult.url)
+            console.log(`✅ Uploaded image ${i + 1}: ${uploadResult.url}`)
           }
         }
       }
+
+      console.log('💾 Saving property with images:', imageUrls)
 
       // Create property record
       const { data: property, error: createError } = await supabase
@@ -73,6 +84,8 @@ export function usePropertyManagement() {
         .single()
 
       if (createError) throw createError
+
+      console.log('✅ Property saved successfully with images:', property.images)
 
       return {
         ...property,
@@ -101,19 +114,27 @@ export function usePropertyManagement() {
     try {
       let imageUrls: string[] = []
 
-      // Get existing property to preserve current images
-      const { data: existingProperty } = await supabase
-        .from('properties')
-        .select('images')
-        .eq('contract_address', contractAddress)
-        .single()
+      // Check if images are provided in the updates object
+      if (updates.images && Array.isArray(updates.images)) {
+        imageUrls = updates.images
+        console.log('🖼️ Using images from updates:', imageUrls)
+      } else {
+        // Get existing property to preserve current images
+        const { data: existingProperty } = await supabase
+          .from('properties')
+          .select('images')
+          .eq('contract_address', contractAddress)
+          .single()
 
-      if (existingProperty?.images) {
-        imageUrls = parseImages(existingProperty.images)
+        if (existingProperty?.images) {
+          imageUrls = parseImages(existingProperty.images)
+          console.log('📋 Preserving existing images:', imageUrls)
+        }
       }
 
-      // Upload new images if provided
+      // Upload new images if provided (this would append to existing)
       if (newImageFiles && newImageFiles.length > 0) {
+        console.log('📤 Uploading new image files...')
         for (let i = 0; i < newImageFiles.length; i++) {
           const file = newImageFiles[i]
           const timestamp = Date.now()
@@ -123,9 +144,12 @@ export function usePropertyManagement() {
           const uploadResult = await uploadFile(file, 'property-images', fileName)
           if (uploadResult.success && uploadResult.url) {
             imageUrls.push(uploadResult.url)
+            console.log(`✅ Uploaded image ${i + 1}: ${uploadResult.url}`)
           }
         }
       }
+
+      console.log('💾 Updating property with images:', imageUrls)
 
       // Update property record
       const { data: property, error: updateError } = await supabase
@@ -139,6 +163,8 @@ export function usePropertyManagement() {
         .single()
 
       if (updateError) throw updateError
+
+      console.log('✅ Property updated successfully with images:', property.images)
 
       return {
         ...property,

@@ -937,6 +937,12 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
 
       console.log('📝 Generated contract address:', contractAddress)
       console.log('🖼️ Images to save:', images)
+      console.log('🖼️ Number of images:', images.length)
+
+      // Log each image URL for debugging
+      images.forEach((url, index) => {
+        console.log(`   Image ${index + 1}: ${url}`)
+      })
 
       // Step 1: ALWAYS save to Supabase database first (metadata is source of truth)
       // NOTE: Database schema only has these columns:
@@ -981,12 +987,13 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
           } : null
         } : null,
         amenities: amenities.length > 0 ? amenities : null,
-        images: images.length > 0 ? images : null,
+        images: images.length > 0 ? images : null,  // This passes the images array
         metadata: metadata, // Store extra fields here
       }
 
       console.log('💾 Saving to Supabase database...')
-      console.log('📦 Property data:', propertyData)
+      console.log('📦 Property data:', JSON.stringify(propertyData, null, 2))
+      console.log('📦 Images being passed:', propertyData.images)
       const supabaseResult = await createSupabaseProperty(propertyData as any)
 
       if (supabaseResult) {
