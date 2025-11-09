@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect as React_useEffect } from "react"
+import { useState, useEffect } from "react"
 import * as React from "react"
 import { Card } from "@/app/components/ui/card"
 import { Button } from "@/app/components/ui/button"
@@ -905,8 +905,11 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
 
   const { createProperty: createSupabaseProperty } = usePropertyManagement()
 
+  // Calculate showPropertyDetails early to avoid forward reference
+  const showPropertyDetails = formData.propertyType === 'residential' || formData.propertyType === 'commercial'
+
   // Extract real contract address from blockchain receipt
-  React.useEffect(() => {
+  useEffect(() => {
     if (isCreateSuccess && createPropertyReceipt) {
       const tokenContract = extractTokenContractFromReceipt(createPropertyReceipt)
       if (tokenContract) {
@@ -921,21 +924,22 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
           financials: { ...financials },
           images: [...images],
           amenities: [...amenities],
+          showPropertyDetails,
         })
       } else {
         console.error('❌ Failed to extract contract address from receipt')
         alert('Property created on blockchain but failed to extract contract address. Please check console for details.')
       }
     }
-  }, [isCreateSuccess, createPropertyReceipt, extractTokenContractFromReceipt, formData, propertyDetails, location, financials, images, amenities])
+  }, [isCreateSuccess, createPropertyReceipt, extractTokenContractFromReceipt, formData, propertyDetails, location, financials, images, amenities, showPropertyDetails])
 
   // Save to Supabase after getting real contract address
-  React.useEffect(() => {
+  useEffect(() => {
     if (realContractAddress && blockchainCreatedData) {
       const saveToSupabase = async () => {
         console.log('💾 Saving to Supabase with REAL contract address:', realContractAddress)
 
-        const { formData, propertyDetails, location, financials, images, amenities } = blockchainCreatedData
+        const { formData, propertyDetails, location, financials, images, amenities, showPropertyDetails } = blockchainCreatedData
 
         // Prepare metadata
         const metadata = {
@@ -1033,7 +1037,7 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
 
       saveToSupabase()
     }
-  }, [realContractAddress, blockchainCreatedData, createSupabaseProperty, onPropertyCreated, showPropertyDetails])
+  }, [realContractAddress, blockchainCreatedData, createSupabaseProperty, onPropertyCreated])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -1107,8 +1111,6 @@ function PropertyCreation({ onPropertyCreated }: { onPropertyCreated?: () => voi
       alert('Failed to create property on blockchain: ' + (err.message || 'Unknown error'))
     }
   }
-
-  const showPropertyDetails = formData.propertyType === 'residential' || formData.propertyType === 'commercial'
 
   return (
     <Card className="p-6">
