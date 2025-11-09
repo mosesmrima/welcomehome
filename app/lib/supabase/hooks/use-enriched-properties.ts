@@ -180,7 +180,50 @@ export function useEnrichedProperty(contractAddress: string) {
       }
 
       if (!blockchainProp) {
-        throw new Error('Property not found on blockchain')
+        // Check if we have database-only property (orphan record)
+        const supabaseData = await getSupabaseProperty(normalizedAddress)
+
+        if (supabaseData) {
+          console.log('📦 DATABASE-ONLY property found, displaying with default blockchain values')
+
+          // Return database-only property with default blockchain values
+          const enriched: EnrichedPropertyDisplay = {
+            id: supabaseData.id || '',
+            contract_address: normalizedAddress,
+            name: supabaseData.name || 'Unnamed Property',
+            description: supabaseData.description || null,
+            location: supabaseData.location || null,
+            images: supabaseData.images || [],
+            documents: supabaseData.documents || null,
+            metadata: (supabaseData.metadata as PropertyMetadata) || null,
+            property_type: supabaseData.property_type || null,
+            size_value: supabaseData.size_value || null,
+            size_unit: supabaseData.size_unit || null,
+            status: supabaseData.status || null,
+            amenities: supabaseData.amenities || null,
+            featured_image_index: supabaseData.featured_image_index || null,
+            created_at: supabaseData.created_at || new Date().toISOString(),
+
+            // Default blockchain values for orphan properties
+            blockchainId: 'N/A',
+            tokenContract: normalizedAddress,
+            totalSupply: '0',
+            pricePerToken: '0',
+            isActive: false,
+            availableTokens: '0',
+            totalValue: '0',
+            hasSupabaseData: true,
+          }
+
+          console.log('🖼️ FINAL images array (database-only):', enriched.images)
+          console.log('🖼️ FINAL images length:', enriched.images.length)
+
+          setProperty(enriched)
+          setIsLoading(false)
+          return
+        }
+
+        throw new Error('Property not found')
       }
 
       // Fetch Supabase data

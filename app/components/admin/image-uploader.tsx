@@ -178,11 +178,12 @@ export function ImageUploader({
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {images.map((imageUrl, index) => (
             <Card key={index} className="relative group overflow-hidden">
-              <div className="aspect-square relative">
+              <div className="aspect-square relative w-full">
                 <Image
                   src={imageUrl}
                   alt={`Property image ${index + 1}`}
                   fill
+                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                   className="object-cover"
                 />
                 {index === 0 && (
