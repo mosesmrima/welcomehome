@@ -134,6 +134,13 @@ export function usePropertyFactory() {
       const results = await Promise.all(propertyPromises)
       const validProperties = results.filter((p): p is PropertyInfo => p !== null)
 
+      console.log('🔗 BLOCKCHAIN: Loaded', validProperties.length, 'properties')
+      console.log('🔗 Token contracts:', validProperties.map(p => ({
+        id: p.id,
+        name: p.name,
+        address: p.tokenContract.toLowerCase()
+      })))
+
       setProperties(validProperties)
     } catch (err) {
       logError('Error fetching properties', err)

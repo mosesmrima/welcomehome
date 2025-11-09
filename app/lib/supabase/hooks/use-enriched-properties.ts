@@ -165,10 +165,19 @@ export function useEnrichedProperty(contractAddress: string) {
     setError(null)
 
     try {
+      console.log('🔍 SEARCH: Looking for', normalizedAddress)
+      console.log('🔍 Available blockchain props:', blockchainProperties.length)
+      console.log('🔍 Their addresses:', blockchainProperties.map(p => p.tokenContract.toLowerCase()))
+
       // Find blockchain property
       const blockchainProp = blockchainProperties.find(
         p => p.tokenContract.toLowerCase() === normalizedAddress
       )
+
+      console.log('🎯 MATCH:', blockchainProp ? 'FOUND' : 'NOT FOUND')
+      if (blockchainProp) {
+        console.log('✓ Property:', blockchainProp.name, blockchainProp.tokenContract)
+      }
 
       if (!blockchainProp) {
         throw new Error('Property not found on blockchain')
@@ -176,6 +185,12 @@ export function useEnrichedProperty(contractAddress: string) {
 
       // Fetch Supabase data
       const supabaseData = await getSupabaseProperty(normalizedAddress)
+
+      console.log('💾 SUPABASE:', supabaseData ? 'FOUND' : 'NULL')
+      if (supabaseData) {
+        console.log('💾 Images count:', supabaseData.images?.length || 0)
+        console.log('💾 Images:', supabaseData.images)
+      }
 
       // Merge data
       const totalSupplyFormatted = formatUnits(blockchainProp.totalSupply, 18)
@@ -212,6 +227,9 @@ export function useEnrichedProperty(contractAddress: string) {
         // Helper
         hasSupabaseData: !!supabaseData,
       }
+
+      console.log('🖼️ FINAL images array:', enriched.images)
+      console.log('🖼️ FINAL images length:', enriched.images.length)
 
       setProperty(enriched)
     } catch (err) {

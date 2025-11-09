@@ -186,11 +186,22 @@ export function usePropertyManagement() {
     if (!supabase) return null
 
     try {
+      console.log('🗄️ SUPABASE QUERY for:', contractAddress.toLowerCase())
+
       const { data: property, error } = await supabase
         .from('properties')
         .select('*')
         .eq('contract_address', contractAddress.toLowerCase())
         .single()
+
+      console.log('🗄️ QUERY RESULT:', property ? 'FOUND' : 'NOT FOUND')
+      if (property) {
+        console.log('🗄️ Raw images from DB:', property.images)
+        console.log('🗄️ Parsed images:', parseImages(property.images))
+      }
+      if (error) {
+        console.log('🗄️ Query error:', error)
+      }
 
       if (error) throw error
 
