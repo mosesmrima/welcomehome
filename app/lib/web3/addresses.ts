@@ -13,20 +13,20 @@ import { Address } from 'viem'
 // =============================================================================
 // DEPLOYED CONTRACT ADDRESSES (Hardcoded fallback for Turbopack env var issue)
 // =============================================================================
-// Deployed on: 2025-10-26
+// Deployed on: 2025-11-15 (Fresh deployment - 0 properties, clean slate)
 // Network: Hedera Testnet (Chain ID: 296)
 // Deployer: 0xD1B156294aFa63d7d174D06D5A83e547d7a5abA9
-// PropertyFactory v3: 2025-10-26 - HEDERA-COMPATIBLE
+// PropertyFactory v3: 2025-11-15 - HEDERA-COMPATIBLE
 //   - Direct token purchases with HBAR payment
 //   - Hedera tinybar conversion (msg.value in tinybars, not wei)
 //   - Automatic refunds for overpayment
 //   - See HEDERA_MSG_VALUE_FINDINGS.md for details
 
 const DEPLOYED_ADDRESSES = {
-  ACCESS_CONTROL: '0xDDAE60c136ea61552c1e6acF3c7Ab8beBd02eF69',
-  OWNERSHIP_REGISTRY: '0x4Eb9F441eA43141572BC49a4e8Fdf53f44B5C99C',
-  PROPERTY_FACTORY: '0x4C67256697e4a6af045faB5D9891455Cba16C420',
-  MARKETPLACE: '0x74347e6046819f6cbc64eb301746c7AaDA614Dec',
+  ACCESS_CONTROL: '0xF8940A9811c747CcFeeF7B6d133d132B4F7021f3',
+  OWNERSHIP_REGISTRY: '0x46e7eaFe9d6dD5EC6D363aE998f8E411796CD940',
+  PROPERTY_FACTORY: '0x27ef822809E0901b2Cd843dc7d0319F81018F73e',
+  MARKETPLACE: '0x9c2b6Cbc69E014e41C68ef9c4a01bA9CDe44f70c',
   PAYMENT_TOKEN: '0x0000000000000000000000000000000000000000',
 } as const
 
